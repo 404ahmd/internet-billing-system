@@ -1,14 +1,16 @@
-{{-- <!-- Sidebar -->
+<!-- Sidebar -->
 <div class="sidebar sidebar-style-2">
     <div class="sidebar-wrapper scrollbar scrollbar-inner">
         <div class="sidebar-content">
             <ul class="nav nav-primary">
-
                 <li class="nav-item">
-                    <a href="{{ route('dashboard.operator') }}">
+                    <a href="{{ route('operator.dashboard') }}">
                          <i class="fas fa-tachometer-alt"></i>
-                        <p>Dashboard</p>
+                        <p>Dashboard</p></br>
+                        <p> {{ Auth::user()->role; }}</p>
                     </a>
+
+
                 </li>
 
                 <!-- ================== Pelanggan ================== -->
@@ -17,13 +19,13 @@
                     <h4 class="text-section">Pelanggan</h4>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('customer.view') }}">
+                    <a href="{{ route('operator.customer.view') }}">
                         <i class="fas fa-address-book"></i>
                         <p>Manajemen Pelanggan</p>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('customer.activation') }}">
+                    <a href="{{ route('operator.customer.activation') }}">
                         <i class="fas fa-check-circle"></i>
                         <p>Aktivasi Pelanggan</p>
                     </a>
@@ -57,7 +59,7 @@
                     <h4 class="text-section">Paket</h4>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('package.view') }}">
+                    <a href="{{ route('operator.package.view') }}">
                         <i class="fas fa-cogs"></i>
                         <p>Manajemen Paket</p>
                     </a>
@@ -91,13 +93,13 @@
                     <h4 class="text-section">Laporan</h4>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('invoice.view') }}">
+                    <a href="{{ route('operator.invoices.view') }}">
                         <i class="fas fa-file-invoice"></i>
                         <p>Lihat Invoice</p>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('transaction.view') }}">
+                    <a href="{{ route('operator.transaction.view') }}">
                         <i class="fas fa-history"></i>
                         <p>Riwayat Transaksi</p>
                     </a>
@@ -107,4 +109,4 @@
         </div>
     </div>
 </div>
-<!-- End Sidebar --> --}}
+<!-- End Sidebar -->

@@ -1,4 +1,4 @@
-@extends('admin.master')
+@extends('operator.master')
 
 @section('content')
 <div class="main-panel">
@@ -31,7 +31,7 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"
                                     aria-label="Tutup">X</button>
                             </div>
-                            <form method="POST" action="{{ route('admin.customer.store') }}">
+                            <form method="POST" action="{{ route('operator.customer.store') }}">
 
                                 <div class="modal-body">
                                     @csrf
@@ -113,7 +113,7 @@
                 </button>
 
                 {{-- FORM SEARCH --}}
-                <form method="GET" action="{{ route('admin.customer.search') }}"
+                <form method="GET" action="{{ route('operator.customer.search') }}"
                     class="d-flex align-items-center gap-2 bg-light rounded px-2 py-1 ms-lg-3 mt-2 mt-lg-0 shadow-sm position-relative">
 
                     <input type="text" class="form-control form-control-sm border-0 bg-transparent"
@@ -128,7 +128,7 @@
 
                 {{-- Tabel --}}
                 <div class="table-responsive mt-3" style="max-height: 600px;">
-                     <h4 class="mt-4">Daftar Pelanggan</h4>
+                    <h4 class="mt-4">Daftar Pelanggan</h4>
                     <table class="table table-bordered table-hover shadow-sm" style="min-width: 900px;">
                         <thead class="table-light">
                             <tr>
@@ -161,9 +161,9 @@
                                 <td>{{ $customer->due_date }}</td>
                                 <td>{{ $customer->notes }}</td>
                                 <td>
-                                    <a href="{{ route('admin.customer.edit', $customer->id) }}"
+                                    <a href="{{ route('operator.customer.edit', $customer->id) }}"
                                         class="btn btn-sm btn-warning">Edit</a>
-                                    <form action="{{ route('admin.customer.destroy', $customer->id) }}" method="POST"
+                                    <form action="{{ route('operator.customer.destroy', $customer->id) }}" method="POST"
                                         class="d-inline" onsubmit="return confirm('Yakin ingin hapus?')">
                                         @csrf
                                         @method('DELETE')

@@ -36,11 +36,8 @@ Route::middleware(['auth'])->group(function () {
         return view('operator.dum_content');
     })->name('dump');
 
-    Route::get('/user/operator', [DashboardController::class, 'operator'])->name('user.operator');
-    Route::get('/user/finance', [DashboardController::class, 'finance'])->name('user.finance');
     Route::get('/user/manager', [DashboardController::class, 'manager'])->name('user.manager');
     Route::get('/dashboard/admin', [AdminController::class, 'dashboard'])->name('dashboard.admin');
-    Route::get('/dashboard/finance', [FinanceController::class, 'dashboard'])->name('dashboard.finance');
 
     //CUSTOMER =======================
     // Route::get('/customer/view', [CustomerController::class, 'index'])->name('customer.view');
@@ -78,6 +75,7 @@ Route::middleware(['auth'])->group(function () {
     // Route::get('/transaction/search', [TransactionController::class, 'search'])->name('transaction.search');
 
     //FINANACE===========================
+    Route::get('/finance/dashboard', [FinanceController::class, 'dashboard'])->name('finance.dashboard');
     Route::get('/finance/list/customer', [FinanceController::class, 'getAllInvoices'])->name('finance.list.customer');
     Route::get('/finance/transactions/history', [FinanceController::class, 'transactionsHistory'])->name('finance.transactions.history');
     Route::get('/finance/data/customers', [FinanceController::class, 'getCustomerData'])->name('finance.data.customers');
@@ -85,7 +83,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/finance/customer/arrears', [FinanceController::class, 'customerArrears'])->name('finance.customer.arrears');
 
     //ADMININSTRATOR======================
-    Route::get('/dashboard/operator', [AdminController::class, 'dashboard'])->name('dashboard.operator');
+    Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
     Route::get('/admin/customer/view', [AdminController::class, 'indexAdmin'])->name('admin.customer.view');
     Route::post('/admin/customer/store', [AdminController::class, 'store'])->name('admin.customer.store');
     Route::get('/admin/customer/search', [AdminController::class, 'search'])->name('admin.customer.search');
@@ -106,21 +104,44 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/report', [AdminController::class, 'adminActivityReport'])->name('admin.report');
 
     Route::get('admin/invoice/view', [AdminController::class, 'indexInvoiceAdmin'])->name('admin.invoice.view');
-    Route::get('admin/invoices/{invoice}/edit', [AdminController::class, 'editInvoiceadmin'])->name('admin.invoices.edit');
-    Route::put('admin/invoices/{invoice}', [AdminController::class, 'updateInvoiceadmin'])->name('admin.invoices.update');
-    Route::get('admin/invoices/search', [AdminController::class, 'searchInvoiceadmin'])->name('admin.invoices.search');
-    Route::delete('admin/invoice/{invoice}', [AdminController::class, 'destroyInvoiceadmin'])->name('admin.invoice.delete');
+    Route::get('admin/invoices/{invoice}/edit', [AdminController::class, 'editInvoiceAdmin'])->name('admin.invoices.edit');
+    Route::put('admin/invoices/{invoice}', [AdminController::class, 'updateInvoiceAdmin'])->name('admin.invoices.update');
+    Route::get('admin/invoices/search', [AdminController::class, 'searchInvoiceAdmin'])->name('admin.invoices.search');
+    Route::delete('admin/invoice/{invoice}', [AdminController::class, 'destroyInvoiceAdmin'])->name('admin.invoice.delete');
 
     Route::get('admin/transaction/search', [AdminController::class, 'searchTransactionsAdmin'])->name('admin.transaction.search');
     Route::get('admin/transaction/view', [AdminController::class, 'indexTransactionsAdmin'])->name('admin.transaction.view');
+
     Route::get('/admin/customer/arrears', [AdminController::class, 'adminCustomerArrears'])->name('admin.customer.arrears');
 
     Route::get('/admin/data/customers', [AdminController::class, 'adminGetCustomerData'])->name('admin.data.customers');
 
+    // OPERATOR =====================
+    Route::get('/operator/dashboard', [OperatorController::class, 'dashboard'])->name('operator.dashboard');
+    Route::get('/operator/customer/view', [OperatorController::class, 'indexOperator'])->name('operator.customer.view');
+    Route::post('/operator/customer/store', [OperatorController::class, 'storeCustomerOperator'])->name('operator.customer.store');
+    Route::get('/operator/customer/search', [OperatorController::class, 'searchCustomerOperator'])->name('operator.customer.search');
+    Route::delete('/operator/customer/{id}/destroy', [OperatorController::class, 'destroyCustomerOperator'])->name('operator.customer.destroy');
+    Route::get('/operator/customer/{customer}/edit', [OperatorController::class, 'editCustomerOperator'])->name('operator.customer.edit');
+    Route::put('/operator/customer/{customer}/update', [OperatorController::class, 'updateCustomerOperator'])->name('operator.customer.update');
+    Route::get('/operator/autocomplete/customer', [OperatorController::class, 'autocomplete'])->name('operator.customer.autocomplete');
 
+    Route::get('/operator/customer/activation', [OperatorController::class, 'indexActivationCustomerOperator'])->name('operator.customer.activation');
+    Route::post('/operator/customer/activation/store', [OperatorController::class, 'storeActivationOperator'])->name('operator.customer.activation.store');
+
+    Route::get('/operator/pacakge/view', [OperatorController::class, 'indexPackageOperator'])->name('operator.package.view');
+    Route::post('/operator/package/store', [OperatorController::class, 'storePackageOperator'])->name('operator.package.store');
+    Route::get('/operator/package/{id}/edit', [OperatorController::class, 'editPacakgeOperator'])->name('operator.package.edit');
+    Route::put('/operator/package/{id}/update', [OperatorController::class, 'updatePackageOperator'])->name('operator.package.update');
+    Route::delete('/operator/package/{id}/destroy', [OperatorController::class, 'destroyPackageOperator'])->name('operator.package.destroy');
+
+    Route::get('operator/invoice/view', [OperatorController::class, 'indexInvoiceOperator'])->name('operator.invoices.view');
+    Route::get('operator/invoices/{invoice}/edit', [OperatorController::class, 'editInvoiceOperator'])->name('operator.invoices.edit');
+    Route::put('operator/invoices/{invoice}', [OperatorController::class, 'updateInvoiceOperator'])->name('operator.invoices.update');
+    Route::get('operator/invoices/search', [OperatorController::class, 'searchInvoiceOperator'])->name('operator.invoices.search');
+    Route::delete('operator/invoice/{invoice}', [OperatorController::class, 'destroyInvoiceOperator'])->name('operator.invoices.delete');
+
+    Route::get('operator/transaction/search', [OperatorController::class, 'searchTransactionsOperator'])->name('operator.transaction.search');
+    Route::get('operator/transaction/view', [OperatorController::class, 'indexTransactionsOperator'])->name('operator.transaction.view');
 });
-// Route::get('/home', function () {
-//     return redirect('/dashboard');
-// });
-
 Route::get('/dashboard', [DashboardController::class, 'index']);

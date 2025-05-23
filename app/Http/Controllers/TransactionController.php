@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 
@@ -26,5 +27,19 @@ class TransactionController extends Controller
             $query->where('name', 'like', '%'. $keyword .'%');
         })->paginate();
         return view('transaction.transactions_customer', compact('transactions'));
+    }
+
+      public function autocomplete(Request $request)
+    {
+        $query = $request->get('query');
+
+        $customers = Customer::where('name', 'like', '%' . $query . '%')->limit(10)->get();
+
+        return response()->json($customers->map(function ($customer) {
+            return [
+                'id' => $customer->id,
+                'name' => $customer->name
+            ];
+        }));
     }
 }

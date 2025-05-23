@@ -5,9 +5,9 @@
             <ul class="nav nav-primary">
 
                 <li class="nav-item">
-                    <a href="{{ route('dashboard.admin') }}">
+                    <a href="{{ route('admin.dashboard') }}">
                          <i class="fas fa-tachometer-alt"></i>
-                        <p>Dashboard</p>
+                        <p>Dashboard {{ Auth::user()->role }}</p>
                     </a>
                 </li>
 

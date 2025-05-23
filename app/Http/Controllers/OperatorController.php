@@ -3,35 +3,380 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Invoice;
+use App\Models\Package;
 use App\Models\Report;
+use App\Models\Transaction;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class OperatorController extends Controller
 {
-    public function dashboard(){
+    public function dashboard()
+    {
+        return view('operator.dashboard');
+    }
 
-        $startDate = Carbon::now()->subMonths(3);
-        $endDate = Carbon::now()->endOfMonth();
+    // CUSTOMER SECTION ========================================
 
-        $data = collect();
+    public function indexOperator()
+    {
+        $customers = Customer::latest()->paginate(10);
+        $invoices = Invoice::all();
+        $packages = Package::all();
+        return view('operator.customer.customer_management', [
+            'invoices' => $invoices,
+            'customers' => $customers,
+            'packages' => $packages
+        ]);
+    }
 
-        for($date = $startDate->copy(); $date->lte($endDate); $date->addDay()){
-            $count = Customer::where('status', 'active')
-            ->whereDate('join_date', $date->toDateString())
-            ->count();
+    //function for add customer adn send to database
+    public function storeCustomerOperator(Request $request)
+    {
+        // validation in form
 
-            $data->push([
-                'date' => $date->format('Y-m-d'),
-                'active_count' => $count,
-            ]);
+        $validated = $request->validate([
+            'name' => 'required',
+            'username' => 'required|unique:customers,username',
+            'phone' => 'required|digits_between:10,15',
+            'address' => 'required',
+            'package' => 'required',
+            'group' => 'required',
+            'join_date' => 'required',
+            'status' => 'required',
+            'notes' => 'required'
+        ]);
+
+        try {
+            Customer::create($validated);
+            return redirect()->route('operator.customer.view')->with('success', 'data berhasil ditambahkan');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'gagal menyimpan data' . $e->getMessage())->withInput();
+        }
+        //while success, redirect to form and throwing success message
+    }
+
+    //function for delete customer by id
+    //this function is aplied in delete button
+    public function destroyCustomerOperator($id)
+    {
+        $customer_id = Customer::findOrFail($id);
+        //check if customer id is empty or cant found
+        //redirect back to table and show error message
+        if (!$customer_id) {
+            return redirect()->route('operator.customer.view')->with('error', 'data tidak bisa dihapus');
         }
 
+        //if the customer id found in database
+        //redirec with success message
+        $customer_id->delete();
+        return redirect()->route('operator.customer.view')->with('success', 'data berhasil dihapus');
+    }
 
-        return view('operator.dashboard',[
-            'activeCustomers' => $data,
+    public function editCustomerOperator(Customer $customer)
+    {
+        return view('operator.customer.edit_customer', [
+            'customer' => $customer,
         ]);
+    }
+
+    public function updateCustomerOperator(Request $request, Customer $customer)
+    {
+        $validated = $request->validate([
+            'name' => 'string|max:255',
+            'username' => 'string|max:255|unique:customers,username,' . $customer->id,
+            'package' => 'string|max:255',
+            'address' => 'string',
+            'group' => 'nullable|string|max:255',
+            'phone' => 'string|max:20',
+            'join_date' => 'date',
+            'status' => 'in:active,inactive,terminated',
+            'last_payment_date' => 'nullable|date',
+            'due_date' => 'nullable|date',
+            'notes' => 'nullable|string',
+        ]);
+
+        try {
+            $customer->update($validated);
+            return redirect()->route('operator.customer.view')->with('success', 'Customer updated successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal merubah data pelanggan: ' . $e->getMessage())->withInput();
+        }
+    }
+
+    public function searchCustomerOperator(Request $request)
+    {
+        $request->validate([
+            'keyword' => 'string|max:255'
+        ]);
+
+        $keyword = $request->keyword;
+        $customers = DB::table('customers')->where('name', 'like', '%' . $keyword . '%')->paginate();
+        return view('operator.customer.customer_result', compact('customers'));
+    }
+
+    //ACTIVATION CUSTOMER SECTION =============================
+    public function indexActivationCustomerOperator()
+    {
+        $customers = Customer::all();
+        $packages = Package::all();
+        return view('operator.customer.activation-customer', compact(['customers', 'packages']));
+    }
+
+    public function storeActivationOperator(Request $request)
+    {
+        // Validasi request (tanpa invoice_number karena kita generate sendiri)
+        $validated = $request->validate([
+            'customer_id'   => 'required|exists:customers,id',
+            'package_id'    => 'required|exists:packages,id',
+            'issue_date'    => 'required|date',
+            'due_date'      => 'required|date',
+            'amount'        => 'required|numeric',
+            'tax_amount'    => 'nullable|numeric',
+            'total_amount'  => 'required|numeric',
+            'status'        => 'required|in:paid,unpaid,overdue',
+            'paid_at'       => 'nullable|date',
+            'notes'         => 'nullable|string',
+        ]);
+
+        try {
+            // Generate nomor invoice otomatis
+            $date = Carbon::parse($validated['due_date'])->format('Ymd');
+            $countToday = Invoice::whereDate('due_date', $validated['due_date'])->count() + 1;
+            $invoiceNumber = 'INV-' . $date . '-' . str_pad($countToday, 3, '0', STR_PAD_LEFT);
+
+            // Jika status paid tapi paid_at kosong, isi otomatis
+            if ($validated['status'] === 'paid' && empty($validated['paid_at'])) {
+                $validated['paid_at'] = now();
+            }
+
+            // Simpan invoice
+            $invoice = Invoice::create([
+                'invoice_number' => $invoiceNumber,
+                'customer_id'    => $validated['customer_id'],
+                'package_id'     => $validated['package_id'],
+                'issue_date'     => $validated['issue_date'],
+                'due_date'       => $validated['due_date'],
+                'amount'         => $validated['amount'],
+                'tax_amount'     => $validated['tax_amount'] ?? 0,
+                'total_amount'   => $validated['total_amount'],
+                'status'         => $validated['status'],
+                'paid_at'        => $validated['paid_at'],
+                'notes'          => $validated['notes'],
+            ]);
+
+            // Update due_date ke customer
+            Customer::where('id', $validated['customer_id'])->update([
+                'due_date' => $validated['due_date'],
+                'package' => $validated['package_id']
+            ]);
+
+            // Jika status paid, buat transaksi otomatis
+            if ($validated['status'] === 'paid') {
+                Transaction::firstOrCreate([
+                    'invoice_id'     => $invoice->id,
+                    'customer_id'    => $validated['customer_id'],
+                    'amount'         => $validated['amount'],
+                    'payment_date'   => $validated['paid_at'],
+                    'payment_method' => 'Cash',
+                    'reference'      => '',
+                    'notes'          => 'Pembayaran invoice nomor ' . $invoiceNumber,
+                ]);
+
+                Customer::where('id', $validated['customer_id'])->update(['status' => 'active']);
+            }
+
+            return redirect()->back()->with('success', 'Invoice berhasil disimpan & pelanggan diaktivasi.');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Gagal menyimpan invoice: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+
+    // PACKAGE SECTION==============================
+    public function indexPackageOperator()
+    {
+        // variable for get all package
+        // return the view package table
+        $packages = Package::all();
+        return view('operator.package.package_management', compact('packages'));
+    }
+
+    // function for store new package to package table
+    public function storePackageOperator(Request $request)
+    {
+        // validation on input package form
+        $request->validate([
+            'name' => 'required',
+            'description' => 'required',
+            'price' => 'required',
+            'type' => 'required',
+            'cycle' => 'required',
+            'bandwidth' => 'required',
+            'status' => 'required'
+        ]);
+
+        //check if package is existing
+        $existing = Package::where('description', $request->description)->first();
+        if ($existing) {
+            //retun back with error message
+            return redirect()->back()->with('error', 'paket sudah tersedia');
+        }
+
+        // ctreate new package adn store to database
+        Package::create([
+            'name' => $request->name,
+            'description' => $request->description,
+            'price' => $request->price,
+            'type' => $request->type,
+            'cycle' => $request->cycle,
+            'bandwidth' => $request->bandwidth,
+            'status' => $request->status
+        ]);
+
+        // return back if success and show the message
+        return redirect()->back()->with('success', 'paket berhasil ditambahkan');
+    }
+
+    public function editPacakgeOperator($id)
+    {
+        $packages = Package::findOrFail($id);
+        return view('operator.package.package_edit', [
+            'packages' => $packages,
+        ]);
+    }
+
+    public function updatePackageOperator(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'name' => 'required',
+            'description' => 'required',
+            'price' => 'required',
+            'type' => 'required',
+            'cycle' => 'required',
+            'bandwidth' => 'required',
+            'status' => 'required'
+        ]);
+
+        try {
+            $pacakge = Package::findOrFail($id);
+            $pacakge->update($validated);
+            return redirect()->route('admin.package.view')->with('success', 'paket berhasil diperbarui');
+        } catch (\Exception $e) {
+            return back()->with('error', 'gagal memperbarui paket' . $e->getMessage())->withInput();
+        }
+    }
+
+    public function destroyPackageOperator($id)
+    {
+        $id_package = Package::findOrFail($id);
+
+        if (!$id_package) {
+            return redirect()->back()->with('error', 'data gagal dihapus');
+        }
+
+        $id_package->delete();
+        return redirect()->route('admin.package.view')->with('success', 'data berhasil dihapus');
+    }
+
+    // INVOICE SECTION ==========================================================================
+    public function indexInvoiceOperator()
+    {
+        $invoices = Invoice::latest()->paginate(10);
+        return view('operator.invoice.invoice_customer', [
+            'invoices' => $invoices,
+        ]);
+    }
+
+    public function searchInvoiceOperator(Request $request)
+    {
+        $keyword = $request->input('customer_name');
+
+        $invoices = Invoice::with('customer')
+            ->whereHas('customer', function ($query) use ($keyword) {
+                $query->where('name', 'like', '%' . $keyword . '%');
+            })->latest()
+            ->paginate(10);
+
+        return view('operator.invoice.invoice_customer', compact('invoices', 'keyword'));
+    }
+
+    //get form invoice update
+    public function editInvoiceOperator(Invoice $invoice)
+    {
+        $customers = Customer::all();
+        $packages = Package::all();
+        return view('operator.invoice.update_invoice', [
+            'invoice' => $invoice,
+            'packages' => $packages,
+            'customers' => $customers
+        ]);
+    }
+
+    public function updateInvoiceOperator(Request $request, Invoice $invoice)
+    {
+
+        $validated = $request->validate([
+            'customer_id' => 'required|exists:customers,id',
+            'package_id' => 'required|exists:packages,id',
+            'invoice_number' => 'required|unique:invoices,invoice_number,' . $invoice->id,
+            'issue_date' => 'required|date',
+            'due_date' => 'required|date|after_or_equal:issue_date',
+            'amount' => 'required|numeric|min:0',
+            'tax_amount' => 'nullable|numeric|min:0',
+            'total_amount' => 'required|numeric|min:0',
+            'status' => 'required|in:paid,unpaid,overdue',
+            'paid_at' => 'nullable|date', //$request->status == 'paid' ? 'required|date' :
+            'notes' => 'nullable|string',
+        ]);
+
+        if ($validated['status'] === 'paid' && empty($validated['paid_at'])) {
+            $validated['paid_at'] = now();
+        } elseif ($validated['status'] !== 'paid') {
+            $validated['paid_at'] = null;
+        }
+
+        try {
+            $invoice->update($validated);
+            return redirect()->route('operator.invoice.view')->with('success', 'data berhasil diperbarui');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'gagal mengupdate data' . $e->getMessage())->withInput();
+        }
+    }
+
+    public function destroyInvoiceOperator(Invoice $invoice)
+    {
+        try {
+            $invoice->delete();
+            return redirect()->route('operator.invoices.view')->with('success', 'Data Berhasil Dihapus');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal Menghapus Data' . $e->getMessage());
+        }
+    }
+
+     // TRANSACTIONS SECTION
+     public function indexTransactionsOperator(){
+        $transactions = Transaction::latest()->paginate(10);
+        return view('operator.transactions.transactions_customer', [
+            'transactions' => $transactions
+        ]);
+    }
+
+    public function searchTransactionsOperator(Request $request){
+        $request->validate([
+            'keyword' => 'string|max:255'
+        ]);
+
+        $keyword = $request->keyword;
+        //$transactions = DB::table('transactions')->where('customer_name', 'like', '%'. $keyword .'%')->paginate();
+
+        $transactions = Transaction::whereHas('customer', function($query) use ($keyword){
+            $query->where('name', 'like', '%'. $keyword .'%');
+        })->paginate(10);
+        return view('operator.transactions.transactions_customer', compact('transactions'));
     }
 
 }

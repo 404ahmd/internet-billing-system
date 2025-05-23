@@ -26,9 +26,9 @@ class AuthController extends Controller
 
             // Arahkan pengguna sesuai role (akses tetap dibatasi oleh middleware CheckRole di route)
             return match ($user->role) {
-                'administrator' => redirect()->route('dashboard.admin'),
-                'operator' => redirect()->route('dashboard.operator'),
-                'finance' => redirect()->route('dashboard.finance'),
+                'administrator' => redirect()->route('admin.dashboard'),
+                'operator' => redirect()->route('operator.dashboard'),
+                'finance' => redirect()->route('finance.dashboard'),
                 'manager' => redirect()->route('user.manager'),
                 default => abort(403, 'Unauthorized role'),
             };

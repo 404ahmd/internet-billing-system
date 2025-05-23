@@ -15,7 +15,53 @@ class AdminController extends Controller
 {
     public function dashboard()
     {
-        return view('admin.dashboard');
+        $startDate = Carbon::now()->subMonths(8)->startOfMonth();
+        $endDate = Carbon::now()->endOfMonth();
+        $monthlyRevenue = Transaction::select(
+            DB::raw("DATE_FORMAT(payment_date, '%Y-%m') as month"),
+            DB::raw("SUM(amount) as total")
+        )
+            ->whereBetween('payment_date', [$startDate, $endDate])
+            ->groupBy('month')
+            ->orderBy('month', 'asc')
+            ->get();
+
+
+        // ==========================================================
+        $paymentStatus = [
+            'paid' => Invoice::where('status', 'paid')->count(),
+            'unpaid' => Invoice::where('status', 'unpaid')->count(),
+            'overdue' => Invoice::where('status', 'overdue')->count(),
+        ];
+
+        // ==========================================================
+        $months = collect();
+        $transactionsCount = collect();
+
+        for ($i = 5; $i >= 0; $i--) {
+            $date = Carbon::now()->subMonths($i);
+            $monthName = $date->format('F Y');
+
+            $count = Transaction::whereYear('payment_date', $date->year)
+                ->whereMonth('payment_date', $date->month)
+                ->count();
+
+            // $amount = Transaction::whereYear('payment_date', $date->year)
+            //     ->whereMonth('payment_date', $date->month)
+            //     ->sum('amount') / 1000000;
+
+            $months->push($monthName);
+            $transactionsCount->push($count);
+            //$transactionsAmount->push(round($amount, 2));
+        }
+
+        return view('admin.dashboard', [
+            'monthlyRevenue' => $monthlyRevenue,
+            'paymentStatus' => $paymentStatus,
+            'months' => $months,
+            'transactionsCount' => $transactionsCount,
+            //'transactionsAmount' => $transactionsAmount,
+        ]);
     }
 
     // CUSTOMER SECTION ==================
@@ -195,7 +241,7 @@ class AdminController extends Controller
     }
 
     // PACKAGE SECTION==============================
-      public function indexPackageAdmin()
+    public function indexPackageAdmin()
     {
         // variable for get all package
         // return the view package table
@@ -239,14 +285,16 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'paket berhasil ditambahkan');
     }
 
-    public function editPacakgeAdmin($id){
+    public function editPacakgeAdmin($id)
+    {
         $packages = Package::findOrFail($id);
         return view('admin.package_manage.package_edit', [
             'packages' => $packages,
         ]);
     }
 
-    public function updatePackageAdmin(Request $request, $id){
+    public function updatePackageAdmin(Request $request, $id)
+    {
         $validated = $request->validate([
             'name' => 'required',
             'description' => 'required',
@@ -261,28 +309,29 @@ class AdminController extends Controller
             $pacakge = Package::findOrFail($id);
             $pacakge->update($validated);
             return redirect()->route('admin.package.view')->with('success', 'paket berhasil diperbarui');
-
         } catch (\Exception $e) {
             return back()->with('error', 'gagal memperbarui paket' . $e->getMessage())->withInput();
         }
     }
 
-    public function destroyPackageAdmin($id){
+    public function destroyPackageAdmin($id)
+    {
         $id_package = Package::findOrFail($id);
 
-        if(!$id_package){
+        if (!$id_package) {
             return redirect()->back()->with('error', 'data gagal dihapus');
         }
 
         $id_package->delete();
-        return redirect() -> route('admin.package.view')->with('success', 'data berhasil dihapus');
+        return redirect()->route('admin.package.view')->with('success', 'data berhasil dihapus');
     }
 
     // ACTIVITY SECTION ===================
-     public function adminActivityReport(){
+    public function adminActivityReport()
+    {
         $reports = Report::select('source', 'description', 'created_at')
-        ->latest()
-        ->paginate(10);
+            ->latest()
+            ->paginate(10);
         return view('admin.activity.activity_report', [
             'reports' => $reports
         ]);
@@ -305,7 +354,7 @@ class AdminController extends Controller
             ->whereHas('customer', function ($query) use ($keyword) {
                 $query->where('name', 'like', '%' . $keyword . '%');
             })
-            ->get();
+            ->paginate(10);
 
         return view('admin.invoice.invoice_customer', compact('invoices', 'keyword'));
     }
@@ -364,14 +413,16 @@ class AdminController extends Controller
     }
 
     // TRANSACTIONS SECTION
-     public function indexTransactionsAdmin(){
+    public function indexTransactionsAdmin()
+    {
         $transactions = Transaction::latest()->paginate(10);
         return view('admin.transactions.transactions_customer', [
             'transactions' => $transactions
         ]);
     }
 
-    public function searchTransactionsAdmin(Request $request){
+    public function searchTransactionsAdmin(Request $request)
+    {
         $request->validate([
             'keyword' => 'string|max:255'
         ]);
@@ -379,21 +430,22 @@ class AdminController extends Controller
         $keyword = $request->keyword;
         //$transactions = DB::table('transactions')->where('customer_name', 'like', '%'. $keyword .'%')->paginate();
 
-        $transactions = Transaction::whereHas('customer', function($query) use ($keyword){
-            $query->where('name', 'like', '%'. $keyword .'%');
-        })->paginate();
+        $transactions = Transaction::whereHas('customer', function ($query) use ($keyword) {
+            $query->where('name', 'like', '%' . $keyword . '%');
+        })->paginate(10);
         return view('admin.transactions.transactions_customer', compact('transactions'));
     }
 
     //CUSTOMER ARREARS
-    public function adminCustomerArrears(){
-        $customers = Customer::whereHas('invoices', function($query){
+    public function adminCustomerArrears()
+    {
+        $customers = Customer::whereHas('invoices', function ($query) {
             $query->where('status', 'unpaid');
         })
-        ->with(['invoices' => function($query){
-            $query->where('status', 'unpaid')
-            ->orderBy('due_date', 'asc');
-        }])->paginate(10);
+            ->with(['invoices' => function ($query) {
+                $query->where('status', 'unpaid')
+                    ->orderBy('due_date', 'asc');
+            }])->paginate(10);
 
         return view('admin.customer_manage.customer_arrears', [
             'customers' => $customers,
@@ -401,9 +453,10 @@ class AdminController extends Controller
     }
 
     // CUSTOMER DATA
-     public function adminGetCustomerData(){
+    public function adminGetCustomerData()
+    {
         $customers = Customer::select('name', 'username', 'package', 'group', 'status')->latest()
-        ->paginate(10);
+            ->paginate(10);
 
         return view('admin.customer_manage.customer_data', [
             'customers' => $customers,

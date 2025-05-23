@@ -1,5 +1,5 @@
 <div class="logo-header" data-background-color="blue">
-    <h3 class="font-weight-bold" style="color: #fff">KingNet Monitoring Panel</h3>
+    <h4 class="font-weight-bold" style="color: #fff">KingNet Monitoring Panel</h3>
 
 
     <!-- TOMBOL HAMBURGER -->

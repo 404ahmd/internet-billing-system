@@ -8,7 +8,7 @@
 
                 <!-- ================== Dashboard ================== -->
                 <li class="nav-item">
-                    <a href="{{ route('dashboard.finance') }}">
+                    <a href="{{ route('finance.dashboard') }}">
                         <i class="fas fa-tachometer-alt"></i>
                         <p>Dashboard</p>
                     </a>

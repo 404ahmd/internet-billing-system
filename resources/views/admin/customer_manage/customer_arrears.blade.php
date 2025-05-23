@@ -7,24 +7,16 @@
         <div class="card">
             <div class="card-body">
                 <div class="container mx-auto px-4 py-6">
-                    <h1 class="text-2xl font-bold mb-6">Daftar Customer dengan Invoice Belum Dibayar</h1>
+                    <h1 class="text-2xl font-bold mb-6">Daftar Customer Dengan Invoice Belum Dibayar</h1>
 
-                    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                    <div class="bg-white shadow-md rounded-lg overflow-hidden mt-4">
                         <table class="table-auto w-full border mb-6">
                             <thead class="bg-gray-200">
                                 <tr>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        No</th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Nama Customer</th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Jumlah Invoice Unpaid</th>
-                                    <th
-                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Total Tagihan</th>
+                                   <th>No</th>
+                                   <th>Nama</th>
+                                   <th>Jumlah Tagihan Belum Dibayar</th>
+                                   <th>Total Tagihan</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
