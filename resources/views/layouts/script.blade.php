@@ -39,9 +39,10 @@
 <!-- Atlantis JS -->
 <script src="{{asset('assets.dashboard') }}/assets/js/atlantis.min.js"></script>
 
+{{-- <script src="{{asset('assets.dashboard') }}/assets/js/demo.js"></script> --}}
 <!-- Atlantis DEMO methods, don't include it in your project! -->
-<script src="{{asset('assets.dashboard') }}/assets/js/setting-demo.js"></script>
-<script src="{{asset('assets.dashboard') }}/assets/js/demo.js"></script>
+{{-- <script src="{{asset('assets.dashboard') }}/assets/js/setting-demo.js"></script>
+<script src="{{asset('assets.dashboard') }}/assets/js/demo.js"></script> --}}
 <script>
     Circles.create({
         id:'circles-1',

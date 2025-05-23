@@ -24,7 +24,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                     @endif
-                    <form action="{{ route('invoices.update', $invoice->id) }}" method="POST">
+                    <form action="{{ route('admin.invoices.update', $invoice->id) }}" method="POST">
                         @csrf
                         @method('PUT')
 
@@ -120,7 +120,7 @@
                         </div>
 
                         <div class="d-flex justify-content-end">
-                            <a href="{{ route('invoice.view') }}" class="btn btn-secondary me-2">Cancel</a>
+                            <a href="{{ route('admin.invoice.view') }}" class="btn btn-secondary me-2">Cancel</a>
                             <button type="submit" class="btn btn-primary">Update Invoice</button>
                         </div>
                     </form>

@@ -9,6 +9,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\OperatorController;
+use App\Http\Controllers\RouterOsController;
 use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 use PHPUnit\Framework\Constraint\Operator;
@@ -29,6 +30,7 @@ Route::get('/', [AuthController::class, 'index']);
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 
+Route::get('/test/router', [RouterOsController::class, 'test']);
 
 Route::middleware(['auth'])->group(function () {
 
@@ -39,40 +41,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/user/manager', [DashboardController::class, 'manager'])->name('user.manager');
     Route::get('/dashboard/admin', [AdminController::class, 'dashboard'])->name('dashboard.admin');
 
-    //CUSTOMER =======================
-    // Route::get('/customer/view', [CustomerController::class, 'index'])->name('customer.view');
-    // Route::post('/customer/store', [CustomerController::class, 'store'])->name('customer.store');
-    // Route::get('/customer/search', [CustomerController::class, 'search'])->name('customer.search');
-    // Route::delete('/customer/{id}/destroy', [CustomerController::class, 'destroy'])->name('customer.destroy');
-    // Route::get('/customer/{customer}/edit', [CustomerController::class, 'edit'])->name('customer.edit');
-    // Route::put('/customer/{customer}/update', [CustomerController::class, 'update'])->name('customer.update');
 
     //AUTOCOMPLETE ======================
     Route::get('/autocomplete/customer', [CustomerController::class, 'autocomplete'])->name('customer.autocomplete');
 
-    //ACTIVATION =======================
-    // Route::get('/customer/activation', [ActivationController::class, 'index'])->name('customer.activation');
-    // Route::post('/customer/activation/store', [ActivationController::class, 'store'])->name('customer.activation.store');
-
-
-    //PACKAGE =======================
-    // Route::get('/pacakge/view', [PackageController::class, 'index'])->name('package.view');
-    // Route::post('/package/store', [PackageController::class, 'store'])->name('package.store');
-    // Route::get('/package/{id}/edit', [PackageController::class, 'edit'])->name('package.edit');
-    // Route::put('/package/{id}/update', [PackageController::class, 'update'])->name('package.update');
-    // Route::delete('/package/{id}/destroy', [PackageController::class, 'destroy'])->name('package.destroy');
-
-    //INVOICE =======================
-    // Route::get('/invoice/view', [InvoiceController::class, 'index'])->name('invoice.view');
-    // Route::get('/invoices/{invoice}/edit', [InvoiceController::class, 'edit'])->name('invoices.edit');
-    // Route::put('/invoices/{invoice}', [InvoiceController::class, 'update'])->name('invoices.update');
-    // Route::get('/invoices/search', [InvoiceController::class, 'search'])->name('invoices.search');
-    // Route::delete('/invoice/{invoice}', [InvoiceController::class, 'destroy'])->name('invoice.delete');
-    // Route::get('/autocomplete/invoice', [InvoiceController::class, 'autocomplete'])->name('invoice.autocomplete');
-
-    //TRANSACTION =======================
-    // Route::get('/transaction/view', [TransactionController::class, 'index'])->name('transaction.view');
-    // Route::get('/transaction/search', [TransactionController::class, 'search'])->name('transaction.search');
+    Route::get('/autocomplete/invoice', [InvoiceController::class, 'autocomplete'])->name('invoice.autocomplete');
 
     //FINANACE===========================
     Route::get('/finance/dashboard', [FinanceController::class, 'dashboard'])->name('finance.dashboard');
