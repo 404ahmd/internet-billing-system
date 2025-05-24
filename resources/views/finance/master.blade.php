@@ -14,12 +14,9 @@
             <!-- HEADER -->
             @include('layouts.navbar')
             <!-- HEADER -->
-              @include('finance.sidebar')
-
 		</div>
 
-		@include('layouts.setting')
-
+            @include('finance.sidebar')
 
         <div class="main-content">
             @yield('content')

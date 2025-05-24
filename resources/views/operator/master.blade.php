@@ -13,15 +13,9 @@
             <!-- HEADER -->
             @include('layouts.navbar')
             <!-- HEADER -->
-
-            @include('operator.sidebar')
 		</div>
-
-
-
+        @include('operator.sidebar')
 		@yield('content')
-
-		@include('layouts.setting')
 	</div>
 
     @include('layouts.script')

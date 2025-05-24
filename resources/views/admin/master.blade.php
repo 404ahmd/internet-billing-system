@@ -15,12 +15,12 @@
             @include('layouts.navbar')
             <!-- HEADER -->
 
-            @include('admin.sidebar')
+
 
 		</div>
+        @include('admin.sidebar')
 
-
-		@yield('content')
+        @yield('content')
 
 		{{-- @include('layouts.setting') --}}
 	</div>
