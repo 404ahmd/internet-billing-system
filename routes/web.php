@@ -8,6 +8,7 @@ use App\Http\Controllers\PackageController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\MemberController;
 use App\Http\Controllers\OperatorController;
 use App\Http\Controllers\RouterOsController;
 use App\Http\Controllers\TransactionController;
@@ -30,6 +31,9 @@ Route::get('/', [AuthController::class, 'index']);
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
 
+Route::get('/member/login', [AuthController::class, 'loginMemberForm'])->name('member.login');
+Route::post('/member/auth', [AuthController::class, 'loginMember'])->name('member.auth');
+Route::get('/member/dashboard', [MemberController::class, 'dashboard'])->name('member.dashboard');
 Route::get('/test/router', [RouterOsController::class, 'test']);
 
 Route::middleware(['auth'])->group(function () {

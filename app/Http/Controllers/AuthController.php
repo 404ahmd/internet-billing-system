@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -41,5 +42,26 @@ class AuthController extends Controller
     {
         Auth::logout();
         return redirect('/login');
+    }
+
+    public function loginMemberForm(){
+        return view('member.login');
+    }
+
+    public function loginMember(Request $request){
+        $request->validate([
+            'username' => 'required'
+        ]);
+
+        $member = Customer::where('username', $request->username)->first();
+
+        if (!$member) {
+            return back()->with('errors', 'username tidak benar');
+        }
+
+        session(['member' => $member->username]);
+        cookie()->queue('member_logged', $member->username, 60 * 24);
+
+        return redirect()->route('member.dashboard');
     }
 }
