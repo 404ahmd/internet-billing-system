@@ -11,6 +11,15 @@
                 </a>
             </li>
         </ul>
+
+        <form action="{{ route('logout') }}" method="POST" class="d-inline">
+            @csrf
+            <button type="submit" class="btn btn-sm btn-danger">
+                <i class="bi bi-box-arrow-right"></i> Keluar
+            </button>
+        </form>
+
+
     </div>
 </nav>
 <!-- End Navbar -->

@@ -24,7 +24,7 @@
                     <form method="POST" action="{{ url('/member/auth') }}">
                         @csrf
                         <div class="mb-3">
-                            <label>Email</label>
+                            <label>Username</label>
                             <input type="text" name="username" class="form-control" placeholder="Username">
                         </div>
                         <div class="mb-3">

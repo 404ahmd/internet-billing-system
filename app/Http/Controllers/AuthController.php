@@ -41,14 +41,18 @@ class AuthController extends Controller
     public function logout()
     {
         Auth::logout();
-        return redirect('/login');
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+        return redirect('/');
     }
 
-    public function loginMemberForm(){
+    public function loginMemberForm()
+    {
         return view('member.login');
     }
 
-    public function loginMember(Request $request){
+    public function loginMember(Request $request)
+    {
         $request->validate([
             'username' => 'required'
         ]);

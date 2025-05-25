@@ -12,6 +12,7 @@ use App\Http\Controllers\MemberController;
 use App\Http\Controllers\OperatorController;
 use App\Http\Controllers\RouterOsController;
 use App\Http\Controllers\TransactionController;
+use Illuminate\Routing\RouteRegistrar;
 use Illuminate\Support\Facades\Route;
 use PHPUnit\Framework\Constraint\Operator;
 use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
@@ -29,7 +30,8 @@ use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 
 Route::get('/', [AuthController::class, 'index']);
 Route::post('/login', [AuthController::class, 'login'])->name('login');
-Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
 
 Route::get('/member/login', [AuthController::class, 'loginMemberForm'])->name('member.login');
 Route::post('/member/auth', [AuthController::class, 'loginMember'])->name('member.auth');
@@ -112,13 +114,18 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/operator/package/{id}/update', [OperatorController::class, 'updatePackageOperator'])->name('operator.package.update');
     Route::delete('/operator/package/{id}/destroy', [OperatorController::class, 'destroyPackageOperator'])->name('operator.package.destroy');
 
-    Route::get('operator/invoice/view', [OperatorController::class, 'indexInvoiceOperator'])->name('operator.invoices.view');
-    Route::get('operator/invoices/{invoice}/edit', [OperatorController::class, 'editInvoiceOperator'])->name('operator.invoices.edit');
-    Route::put('operator/invoices/{invoice}', [OperatorController::class, 'updateInvoiceOperator'])->name('operator.invoices.update');
+    Route::get('/operator/invoice/view', [OperatorController::class, 'indexInvoiceOperator'])->name('operator.invoices.view');
+    Route::get('/operator/invoices/{invoice}/edit', [OperatorController::class, 'editInvoiceOperator'])->name('operator.invoices.edit');
+    Route::put('/operator/invoices/{invoice}', [OperatorController::class, 'updateInvoiceOperator'])->name('operator.invoices.update');
     Route::get('operator/invoices/search', [OperatorController::class, 'searchInvoiceOperator'])->name('operator.invoices.search');
-    Route::delete('operator/invoice/{invoice}', [OperatorController::class, 'destroyInvoiceOperator'])->name('operator.invoices.delete');
+    Route::delete('/operator/invoice/{invoice}', [OperatorController::class, 'destroyInvoiceOperator'])->name('operator.invoices.delete');
 
-    Route::get('operator/transaction/search', [OperatorController::class, 'searchTransactionsOperator'])->name('operator.transaction.search');
-    Route::get('operator/transaction/view', [OperatorController::class, 'indexTransactionsOperator'])->name('operator.transaction.view');
+    Route::get('/operator/transaction/search', [OperatorController::class, 'searchTransactionsOperator'])->name('operator.transaction.search');
+    Route::get('/operator/transaction/view', [OperatorController::class, 'indexTransactionsOperator'])->name('operator.transaction.view');
+
+    Route::get('/operator/router/view', [OperatorController::class, 'indexOperatorRouter'])->name('operator.router.view');
+    Route::post('/operator/router/connect', [OperatorController::class, 'connectOperatorRouter'])->name('operator.router.connect');
+    Route::get('/operator/router/{id}/status', [OperatorController::class, 'getOperatorRouterStatus'])->name('operator.router.status');
+
 });
 Route::get('/dashboard', [DashboardController::class, 'index']);

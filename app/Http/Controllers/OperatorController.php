@@ -2,14 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\RouterStatusUpdated;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Package;
 use App\Models\Report;
+use App\Models\Router;
 use App\Models\Transaction;
+use App\Services\RouterOsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use RouterOS\Client;
+use RouterOS\Query;
 
 class OperatorController extends Controller
 {
@@ -357,15 +362,17 @@ class OperatorController extends Controller
         }
     }
 
-     // TRANSACTIONS SECTION
-     public function indexTransactionsOperator(){
+    // TRANSACTIONS SECTION
+    public function indexTransactionsOperator()
+    {
         $transactions = Transaction::latest()->paginate(10);
         return view('operator.transactions.transactions_customer', [
             'transactions' => $transactions
         ]);
     }
 
-    public function searchTransactionsOperator(Request $request){
+    public function searchTransactionsOperator(Request $request)
+    {
         $request->validate([
             'keyword' => 'string|max:255'
         ]);
@@ -373,10 +380,74 @@ class OperatorController extends Controller
         $keyword = $request->keyword;
         //$transactions = DB::table('transactions')->where('customer_name', 'like', '%'. $keyword .'%')->paginate();
 
-        $transactions = Transaction::whereHas('customer', function($query) use ($keyword){
-            $query->where('name', 'like', '%'. $keyword .'%');
+        $transactions = Transaction::whereHas('customer', function ($query) use ($keyword) {
+            $query->where('name', 'like', '%' . $keyword . '%');
         })->paginate(10);
         return view('operator.transactions.transactions_customer', compact('transactions'));
     }
 
+    //ROUTER SECTION ================================================
+    public function indexOperatorRouter()
+    {
+        return view('operator.router.router_dashboard');
+    }
+
+    public function connectOperatorRouter(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required',
+            'host' => 'required',
+            'username' => 'required',
+            'password' => 'required',
+            'port' => 'nullable|integer'
+        ]);
+
+
+        $client = RouterOsService::connect(
+            $validated['host'],
+            $validated['username'],
+            $validated['password'],
+        );
+
+        if (!$client) {
+            return back()->withErrors(['msg' => 'gagal terhubung']);
+        }
+
+        // test connection
+        $client->query(new Query('/system/resource/print'))->read();
+
+        $router = Router::create([
+            ...$validated,
+            'is_connected' => true,
+        ]);
+    }
+
+    public function getOperatorRouterStatus($routerId)
+    {
+        $router = Router::findOrFail($routerId);
+
+        try {
+            $client = new Client([
+                'host' => $router->host,
+                'user' => $router->username,
+                'pass' => $router->password,
+            ]);
+
+            $resource = $client->query(new Query('/system/resource/print'))->read();
+
+            // Update last seen
+            $router->update([
+                'is_online' => true,
+                'last_seen_at' => now(),
+            ]);
+
+            return response()->json([
+                'online' => true,
+                'data' => $resource[0],
+            ]);
+        } catch (\Exception $e) {
+            $router->update(['is_online' => false]);
+            return response()->json(['online' => false], 200);
+        }
+    }
 }
