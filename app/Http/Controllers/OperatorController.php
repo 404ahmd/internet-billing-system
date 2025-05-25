@@ -389,37 +389,78 @@ class OperatorController extends Controller
     //ROUTER SECTION ================================================
     public function indexOperatorRouter()
     {
-        return view('operator.router.router_dashboard');
+        $routers = Router::all();
+        return view('operator.router.router_dashboard', compact('routers'));
     }
 
-    public function connectOperatorRouter(Request $request)
+    public function connectDump(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'name' => 'required',
-            'host' => 'required',
+            'host' => 'required|ip',
             'username' => 'required',
             'password' => 'required',
             'port' => 'nullable|integer'
         ]);
 
+        try {
+            $client = new Client([
+                'host' => trim($request->host),
+                'user' => trim($request->username),
+                'pass' => trim($request->password),
+                'port' => $request->port ?? 8728,
+                'timeout' => 3
+            ]);
 
-        $client = RouterOsService::connect(
-            $validated['host'],
-            $validated['username'],
-            $validated['password'],
-        );
+            $response = $client->query(new \RouterOS\Query('/system/resource/print'))->read();
 
-        if (!$client) {
-            return back()->withErrors(['msg' => 'gagal terhubung']);
+            return response()->json(['success' => true, 'data' => $response]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
+    }
 
-        // test connection
-        $client->query(new Query('/system/resource/print'))->read();
-
-        $router = Router::create([
-            ...$validated,
-            'is_connected' => true,
+    public function connectOperatorRouter(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'host' => 'required|ip',
+            'username' => 'required|string',
+            'password' => 'required|string',
+            'port' => 'nullable|integer|min:1|max:65535'
         ]);
+
+        try {
+            $client = new Client([
+                'host' => trim($validated['host']),
+                'user' => trim($validated['username']),
+                'pass' => trim($validated['password']),
+                'port' => $validated['port'] ?? 8728,
+                'timeout' => 3,
+                'attempts' => 1
+            ]);
+
+            // Test koneksi dengan query sederhana
+            $client->query(new Query('/system/resource/print'))->read();
+
+            // Simpan router ke database
+            $router = Router::create([
+                'name' => $validated['name'],
+                'host' => $validated['host'],
+                'username' => $validated['username'],
+                'password' => encrypt($validated['password']), // Enkripsi password
+                'port' => $validated['port'] ?? 8728,
+                'is_active' => true,
+                'last_seen_at' => now()
+            ]);
+
+            return redirect()->route('operator.router.index')
+                ->with('success', 'Router berhasil ditambahkan dan terhubung');
+        } catch (\Exception $e) {
+            return back()
+                ->withInput()
+                ->withErrors(['connection_error' => 'Gagal terhubung ke router: ' . $e->getMessage()]);
+        }
     }
 
     public function getOperatorRouterStatus($routerId)
@@ -427,27 +468,58 @@ class OperatorController extends Controller
         $router = Router::findOrFail($routerId);
 
         try {
+            // Decrypt password sebelum digunakan
+            $decryptedPassword = decrypt($router->password);
+
             $client = new Client([
                 'host' => $router->host,
                 'user' => $router->username,
-                'pass' => $router->password,
+                'pass' => $decryptedPassword,
+                'port' => $router->port ?? 8728,
+                'timeout' => 3,
+                'attempts' => 1
             ]);
 
+            // Ambil data dari router
             $resource = $client->query(new Query('/system/resource/print'))->read();
+            $identity = $client->query(new Query('/system/identity/print'))->read();
+            $interfaces = $client->query(new Query('/interface/print'))->read();
 
-            // Update last seen
+            // Update status router
             $router->update([
-                'is_online' => true,
+                'is_active' => true,
                 'last_seen_at' => now(),
             ]);
 
             return response()->json([
                 'online' => true,
-                'data' => $resource[0],
+                'data' => [
+                    'identity' => $identity[0]['name'] ?? $router->name,
+                    'cpu_load' => $resource[0]['cpu-load'] ?? 'N/A',
+                    'uptime' => $this->formatUptime($resource[0]['uptime'] ?? 0),
+                    'memory_usage' => round(($resource[0]['free-memory'] / $resource[0]['total-memory']) * 100, 2),
+                    'interface_count' => count($interfaces),
+                    'version' => $resource[0]['version'] ?? 'N/A'
+                ]
             ]);
         } catch (\Exception $e) {
-            $router->update(['is_online' => false]);
-            return response()->json(['online' => false], 200);
+            $router->update(['is_active' => false]);
+
+            return response()->json([
+                'online' => false,
+                'error' => $e->getMessage(),
+                'last_seen' => $router->last_seen_at ? $router->last_seen_at->format('Y-m-d H:i:s') : 'Never'
+            ]);
         }
+    }
+
+    private function formatUptime($seconds)
+    {
+        $seconds = (int)$seconds;
+        $days = floor($seconds / 86400);
+        $hours = floor(($seconds % 86400) / 3600);
+        $minutes = floor(($seconds % 3600) / 60);
+
+        return sprintf('%d hari %d jam %d menit', $days, $hours, $minutes);
     }
 }

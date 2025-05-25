@@ -125,7 +125,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/operator/router/view', [OperatorController::class, 'indexOperatorRouter'])->name('operator.router.view');
     Route::post('/operator/router/connect', [OperatorController::class, 'connectOperatorRouter'])->name('operator.router.connect');
-    Route::get('/operator/router/{id}/status', [OperatorController::class, 'getOperatorRouterStatus'])->name('operator.router.status');
-
+    Route::get('/operator/router/{id}/status', [OperatorController::class, 'getOperatorRouterStatus'])
+        ->name('operator.router.status');
 });
 Route::get('/dashboard', [DashboardController::class, 'index']);
