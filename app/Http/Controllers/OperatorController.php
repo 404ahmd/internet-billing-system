@@ -5,16 +5,20 @@ namespace App\Http\Controllers;
 use App\Events\RouterStatusUpdated;
 use App\Models\Customer;
 use App\Models\Invoice;
+use App\Models\IpPool;
 use App\Models\Package;
 use App\Models\Report;
 use App\Models\Router;
+use App\Models\RouterStat;
 use App\Models\Transaction;
 use App\Services\RouterOsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use RouterOS\Client;
 use RouterOS\Query;
+use Illuminate\Support\Str;
 
 class OperatorController extends Controller
 {
@@ -393,33 +397,6 @@ class OperatorController extends Controller
         return view('operator.router.router_dashboard', compact('routers'));
     }
 
-    public function connectDump(Request $request)
-    {
-        $request->validate([
-            'name' => 'required',
-            'host' => 'required|ip',
-            'username' => 'required',
-            'password' => 'required',
-            'port' => 'nullable|integer'
-        ]);
-
-        try {
-            $client = new Client([
-                'host' => trim($request->host),
-                'user' => trim($request->username),
-                'pass' => trim($request->password),
-                'port' => $request->port ?? 8728,
-                'timeout' => 3
-            ]);
-
-            $response = $client->query(new \RouterOS\Query('/system/resource/print'))->read();
-
-            return response()->json(['success' => true, 'data' => $response]);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-    }
-
     public function connectOperatorRouter(Request $request)
     {
         $validated = $request->validate([
@@ -454,7 +431,7 @@ class OperatorController extends Controller
                 'last_seen_at' => now()
             ]);
 
-            return redirect()->route('operator.router.index')
+            return redirect()->route('operator.router.view')
                 ->with('success', 'Router berhasil ditambahkan dan terhubung');
         } catch (\Exception $e) {
             return back()
@@ -521,5 +498,97 @@ class OperatorController extends Controller
         $minutes = floor(($seconds % 3600) / 60);
 
         return sprintf('%d hari %d jam %d menit', $days, $hours, $minutes);
+    }
+
+    // DECRYPT PASSWORD
+
+    private function decryptPassword($encryptedPassword)
+    {
+        try {
+            // Jika password dienkripsi dengan Laravel encrypt()
+            if (Str::startsWith($encryptedPassword, 'eyJpdiI6')) {
+                return Crypt::decrypt($encryptedPassword);
+            }
+
+            // Jika password tidak dienkripsi (plain text)
+            return $encryptedPassword;
+        } catch (\Exception $e) {
+            throw new \Exception("Failed to decrypt router password: " . $e->getMessage());
+        }
+    }
+
+    // IP POOL SECTION
+    public function create()
+    {
+        $routers = Router::all();
+        $ip_pools = IpPool::latest()->paginate(10);
+        return view('operator.ip_pool.create', [
+            'routers' => $routers,
+            'ip_pools' => $ip_pools
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        // Validasi input
+        $data = $request->validate([
+            'name' => 'required',
+            'range' => 'required',
+            'router_id' => 'required|exists:routers,id',
+        ]);
+
+        if (!isset($data['router_id'])) {
+            return back()
+                ->withInput()
+                ->withErrors(['router_id' => 'Router ID harus dipilih']);
+        }
+
+        // Dapatkan router
+        $router = Router::findOrFail($request->router_id);
+
+        try {
+
+            $password = $this->decryptPassword($router->password);
+            // Buat koneksi ke MikroTik
+            $client = new Client([
+                'host' => $router->host,
+                'user' => $router->username,
+                'pass' => $password,
+                'timeout' => 10, // tambahkan timeout
+                'attempts' => 2, // jumlah percobaan
+            ]);
+
+            // Periksa apakah pool dengan nama yang sama sudah ada di router
+            $checkQuery = new Query('/ip/pool/print');
+            $checkQuery->where('name', $data['name']);
+            $existingPools = $client->query($checkQuery)->read();
+
+            if (!empty($existingPools)) {
+                return back()
+                    ->withInput()
+                    ->withErrors(['name' => 'IP Pool dengan nama ini sudah ada di router']);
+            }
+
+            $range = preg_replace('/\s+/', '', $data['range']); // Hilangkan semua spasi
+
+            // Tambahkan pool ke MikroTik
+           $client->query((new Query('/ip/pool/add'))
+            ->equal('name', trim($data['name']))
+            ->equal('ranges', $data['range']))
+            ->read();
+
+            IpPool::create([
+                'router_id' => $router->id,
+                'name' => $data['name'],
+                'range' => $data['range'],
+            ]);
+
+            return redirect()->back() // lebih baik redirect ke route tertentu
+                ->with('success', 'IP Pool berhasil ditambahkan');
+        } catch (\Exception $e) {
+            return back()
+                ->withInput()
+                ->withErrors(['connection_error' => 'Gagal menambahkan IP Pool: ' . $e->getMessage()]);
+        }
     }
 }

@@ -10,6 +10,7 @@ use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\OperatorController;
+use App\Http\Controllers\PppoeController;
 use App\Http\Controllers\RouterOsController;
 use App\Http\Controllers\TransactionController;
 use Illuminate\Routing\RouteRegistrar;
@@ -44,6 +45,7 @@ Route::middleware(['auth'])->group(function () {
         return view('operator.dum_content');
     })->name('dump');
 
+    
     Route::get('/user/manager', [DashboardController::class, 'manager'])->name('user.manager');
     Route::get('/dashboard/admin', [AdminController::class, 'dashboard'])->name('dashboard.admin');
 
@@ -95,6 +97,12 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/admin/data/customers', [AdminController::class, 'adminGetCustomerData'])->name('admin.data.customers');
 
+    Route::get('/admin/router/view', [AdminController::class, 'indexAdminRouter'])->name('admin.router.view');
+    Route::post('/admin/router/connect', [AdminController::class, 'connectAdminRouter'])->name('admin.router.connect');
+    Route::get('/admin/router/{id}/status', [AdminController::class, 'getAdminRouterStatus'])
+        ->name('admin.router.status');
+
+
     // OPERATOR =====================
     Route::get('/operator/dashboard', [OperatorController::class, 'dashboard'])->name('operator.dashboard');
     Route::get('/operator/customer/view', [OperatorController::class, 'indexOperator'])->name('operator.customer.view');
@@ -127,5 +135,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/operator/router/connect', [OperatorController::class, 'connectOperatorRouter'])->name('operator.router.connect');
     Route::get('/operator/router/{id}/status', [OperatorController::class, 'getOperatorRouterStatus'])
         ->name('operator.router.status');
+
+   Route::get('/operator/ip-pool/create', [OperatorController::class, 'create'])->name('operator.ip-pool.create');
+   Route::post('/operator/ip-pool/store', [OperatorController::class, 'store'])->name('operator.ip-pool.store');
 });
 Route::get('/dashboard', [DashboardController::class, 'index']);

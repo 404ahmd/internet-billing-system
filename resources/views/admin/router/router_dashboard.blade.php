@@ -1,7 +1,8 @@
-@extends('operator.master')
+@extends('admin.master')
 
 @section('content')
-    <div class="main-panel">
+
+<div class="main-panel">
         <div class="content">
             <div class="card">
                 <div class="card-body">
@@ -202,4 +203,5 @@
             setInterval(refreshRouterStatus, 5000);
         });
     </script>
+
 @endsection

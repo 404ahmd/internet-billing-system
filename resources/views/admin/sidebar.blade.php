@@ -37,7 +37,7 @@
                     <h4 class="text-section">Jaringan</h4>
                 </li>
                 <li class="nav-item">
-                    <a href="#">
+                    <a href="{{ route('admin.router.view') }}">
                         <i class="fas fa-server"></i>
                         <p>Router</p>
                     </a>

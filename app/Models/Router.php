@@ -13,4 +13,8 @@ class Router extends Model
         'name', 'host', 'port', 'username', 'password',
         'is_online', 'last_seen_at'
     ];
+
+    public function IpPolls(){
+        return $this->hasMany(IpPool::class);
+    }
 }
