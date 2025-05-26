@@ -102,6 +102,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/router/{id}/status', [AdminController::class, 'getAdminRouterStatus'])
         ->name('admin.router.status');
 
+     Route::get('/admin/ip-pool/create', [AdminController::class, 'createIpPool'])->name('admin.ip-pool.create');
+   Route::post('/admin/ip-pool/store', [AdminController::class, 'storeIpPool'])->name('admin.ip-pool.store');
+   Route::delete('/admin/ip-pool/{id}/destroy', [AdminController::class, 'destroyIpPool'])->name('admin.ip-pool.destroy');
 
     // OPERATOR =====================
     Route::get('/operator/dashboard', [OperatorController::class, 'dashboard'])->name('operator.dashboard');
@@ -135,8 +138,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/operator/router/connect', [OperatorController::class, 'connectOperatorRouter'])->name('operator.router.connect');
     Route::get('/operator/router/{id}/status', [OperatorController::class, 'getOperatorRouterStatus'])
         ->name('operator.router.status');
+    Route::delete('/operator/router/{router}/destroy', [OperatorController::class, 'destroyRouter'])->name('operator.destroy.router');
 
-   Route::get('/operator/ip-pool/create', [OperatorController::class, 'create'])->name('operator.ip-pool.create');
-   Route::post('/operator/ip-pool/store', [OperatorController::class, 'store'])->name('operator.ip-pool.store');
+   Route::get('/operator/ip-pool/create', [OperatorController::class, 'createIpPool'])->name('operator.ip-pool.create');
+   Route::post('/operator/ip-pool/store', [OperatorController::class, 'storeIpPool'])->name('operator.ip-pool.store');
+   Route::delete('/operator/ip-pool/{id}/destroy', [OperatorController::class, 'destroyIpPool'])->name('operator.ip-pool.destroy');
+
 });
 Route::get('/dashboard', [DashboardController::class, 'index']);

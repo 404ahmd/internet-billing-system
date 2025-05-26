@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Invoice;
+use App\Models\IpPool;
 use App\Models\Package;
 use App\Models\Report;
 use App\Models\Router;
@@ -467,14 +468,14 @@ class AdminController extends Controller
     }
 
     // ROUTER SECTION ======================================
+    //ROUTER SECTION ================================================
     public function indexAdminRouter()
     {
         $routers = Router::all();
         return view('admin.router.router_dashboard', compact('routers'));
     }
 
-
-    public function connectAdminRouoter(Request $request)
+    public function connectAdminRouter(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -508,7 +509,7 @@ class AdminController extends Controller
                 'last_seen_at' => now()
             ]);
 
-            return redirect()->route('operator.router.view')
+            return redirect()->route('admin.router.view')
                 ->with('success', 'Router berhasil ditambahkan dan terhubung');
         } catch (\Exception $e) {
             return back()
@@ -567,6 +568,22 @@ class AdminController extends Controller
         }
     }
 
+    public function destroyRouter(Router $router)
+    {
+        try {
+            if ($router->IpPolls()->count() > 0) {
+                return redirect()->back()->with('error', 'Router masih digunakan oleh Ip Pool, silahkan hapus Ip pool terlebih dahulu');
+            }
+
+            $router->delete();
+            return redirect()->route('admin.router.view')->with('success', 'Router berhasil dihapus');
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors([
+                'error' => 'Gagal menghapus router: ' . $e->getMessage()
+            ]);
+        }
+    }
+
     private function formatUptime($seconds)
     {
         $seconds = (int)$seconds;
@@ -575,5 +592,126 @@ class AdminController extends Controller
         $minutes = floor(($seconds % 3600) / 60);
 
         return sprintf('%d hari %d jam %d menit', $days, $hours, $minutes);
+    }
+
+     // IP POOL SECTION
+    public function createIpPool()
+    {
+        $routers = Router::all();
+        $ip_pools = IpPool::latest()->paginate(10);
+        return view('admin.ip_pool.create', [
+            'routers' => $routers,
+            'ip_pools' => $ip_pools
+        ]);
+    }
+
+    public function storeIpPool(Request $request)
+    {
+        // Validasi input
+        $data = $request->validate([
+            'name' => 'required',
+            'range' => 'required',
+            'router_id' => 'required|exists:routers,id',
+        ]);
+
+        if (!isset($data['router_id'])) {
+            return back()
+                ->withInput()
+                ->withErrors(['router_id' => 'Router ID harus dipilih']);
+        }
+
+        // Dapatkan router
+        $router = Router::findOrFail($request->router_id);
+
+        try {
+
+            $password = $this->decryptPassword($router->password);
+            // Buat koneksi ke MikroTik
+            $client = new Client([
+                'host' => $router->host,
+                'user' => $router->username,
+                'pass' => $password,
+                'timeout' => 10, // tambahkan timeout
+                'attempts' => 2, // jumlah percobaan
+            ]);
+
+            // Periksa apakah pool dengan nama yang sama sudah ada di router
+            $checkQuery = new Query('/ip/pool/print');
+            $checkQuery->where('name', $data['name']);
+            $existingPools = $client->query($checkQuery)->read();
+
+            if (!empty($existingPools)) {
+                return back()
+                    ->withInput()
+                    ->withErrors(['name' => 'IP Pool dengan nama ini sudah ada di router']);
+            }
+
+            $range = preg_replace('/\s+/', '', $data['range']); // Hilangkan semua spasi
+
+            // Tambahkan pool ke MikroTik
+            $client->query((new Query('/ip/pool/add'))
+                ->equal('name', trim($data['name']))
+                ->equal('ranges', $data['range']))
+                ->read();
+
+            IpPool::create([
+                'router_id' => $router->id,
+                'name' => $data['name'],
+                'range' => $data['range'],
+            ]);
+
+            return redirect()->back() // lebih baik redirect ke route tertentu
+                ->with('success', 'IP Pool berhasil ditambahkan');
+        } catch (\Exception $e) {
+            return back()
+                ->withInput()
+                ->withErrors(['connection_error' => 'Gagal menambahkan IP Pool: ' . $e->getMessage()]);
+        }
+    }
+
+    public function destroyIpPool($id)
+    {
+
+        $ipPool = IpPool::findOrFail($id);
+
+        try {
+            $router = $ipPool->router;
+
+            if (!$router) {
+                return back()->with('error', 'router tidak ditemukan');
+            }
+
+            $password = $this->decryptPassword($router->password);
+            $client = new Client([
+                'host' => $router->host,
+                'user' => $router->username,
+                'pass' => $password,
+                'port' => $router->port ?? 8728,
+                'timeout' => 10,
+                'attempts' => 2,
+            ]);
+
+            $checkQuery = new Query('/ip/pool/print');
+            
+
+            $checkQuery->where('name', $ipPool->name);
+            $existingPools = $client->query($checkQuery)->read();
+
+
+            if (!empty($existingPools)) {
+                $poolId = $existingPools[0]['.id'];
+
+                //hapus ip pool
+                $removeQuery = new Query('/ip/pool/remove');
+                $removeQuery->equal('.id', $poolId);
+                $client->query($removeQuery)->read();
+            }
+
+            $ipPool->delete();
+
+            return redirect()->route('admin.ip-pool.create')->with('success', 'Ip Pool berhasil dihapus');
+        } catch (\Exception $e) {
+            return back()->withErrors(["connection_error" => "gagal menghapus ip pool" . $e->getMessage()]);
+        }
     }
 }

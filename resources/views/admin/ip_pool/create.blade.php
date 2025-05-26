@@ -1,4 +1,4 @@
-@extends('operator.master')
+@extends('admin.master')
 
 @section('content')
     <div class="main-panel">

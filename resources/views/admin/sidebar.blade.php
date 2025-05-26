@@ -43,7 +43,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="#">
+                    <a href="{{route('admin.ip-pool.create')}}">
                         <i class="fas fa-project-diagram"></i>
                         <p>IP Pool</p>
                     </a>

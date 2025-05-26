@@ -14,17 +14,7 @@
                         </div>
                     @endif
 
-                    @if ($errors->any())
-                        
-                        <div class="alert alert-danger alert-dismissible fade show">
-                            <ul class="mb-0">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                            <button type="button" class="close" data-dismiss="alert">&times;</button>
-                        </div>
-                    @endif
+                    P
 
                     <!-- Form Connect -->
                     <div class="card mb-4">
@@ -92,6 +82,7 @@
                                                 <th>Uptime</th>
                                                 <th>Memory Usage</th>
                                                 <th>Last Seen</th>
+                                                <th>Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -107,6 +98,16 @@
                                                     <td class="memory_usage">-</td>
                                                     <td class="last_seen">
                                                         {{ $router->last_seen_at ? \Carbon\Carbon::parse($router->last_seen_at)->diffForHumans() : 'Never' }}
+                                                    </td>
+                                                    <td>
+                                                        <form action="{{route('operator.destroy.router', $router->id)}}" method="POST"
+                                                            onsubmit="return confirm('Yakin ingin menghapus router ini?');">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                                <i class="fas fa-trash-alt"></i> Hapus
+                                                            </button>
+                                                        </form>
                                                     </td>
                                                 </tr>
                                             @endforeach
