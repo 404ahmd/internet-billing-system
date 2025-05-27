@@ -101,8 +101,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/admin/router/connect', [AdminController::class, 'connectAdminRouter'])->name('admin.router.connect');
     Route::get('/admin/router/{id}/status', [AdminController::class, 'getAdminRouterStatus'])
         ->name('admin.router.status');
+    Route::delete('/admin/router/{router}/destroy', [AdminController::class, 'destroyRouter'])->name('admin.destroy.router');
 
-     Route::get('/admin/ip-pool/create', [AdminController::class, 'createIpPool'])->name('admin.ip-pool.create');
+    Route::get('/admin/ip-pool/create', [AdminController::class, 'createIpPool'])->name('admin.ip-pool.create');
    Route::post('/admin/ip-pool/store', [AdminController::class, 'storeIpPool'])->name('admin.ip-pool.store');
    Route::delete('/admin/ip-pool/{id}/destroy', [AdminController::class, 'destroyIpPool'])->name('admin.ip-pool.destroy');
 
@@ -143,6 +144,10 @@ Route::middleware(['auth'])->group(function () {
    Route::get('/operator/ip-pool/create', [OperatorController::class, 'createIpPool'])->name('operator.ip-pool.create');
    Route::post('/operator/ip-pool/store', [OperatorController::class, 'storeIpPool'])->name('operator.ip-pool.store');
    Route::delete('/operator/ip-pool/{id}/destroy', [OperatorController::class, 'destroyIpPool'])->name('operator.ip-pool.destroy');
+
+   Route::get('/operator/pppoe-service/create', [OperatorController::class, 'createPppoeService'])->name('operator.pppoe-service.create');
+    Route::post('/operator/pppoe-service/store', [OperatorController::class, 'storePppoeService'])->name('operator.pppoe-service.store');
+    Route::post('/operator/pppoe-service/get-interface', [OperatorController::class, 'getInterface'])->name('operator.pppoe-service.get-interface');
 
 });
 Route::get('/dashboard', [DashboardController::class, 'index']);

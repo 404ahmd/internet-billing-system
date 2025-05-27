@@ -1,0 +1,93 @@
+{{-- resources/views/pppoe-services/create.blade.php --}}
+
+@extends('layouts.app')
+
+@section('content')
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">Create PPPoE Service</div>
+
+                <div class="card-body">
+                    @if (session('error'))
+                        <div class="alert alert-danger">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
+                    <form method="POST" action="{{ route('pppoe-services.store') }}">
+                        @csrf
+
+                        <div class="form-group mb-3">
+                            <label for="router_id">Router</label>
+                            <select class="form-control" id="router_id" name="router_id" required onchange="loadInterfaces(this.value)">
+                                <option value="">Select Router</option>
+                                @foreach($routers as $router)
+                                    <option value="{{ $router->id }}" {{ old('router_id') == $router->id ? 'selected' : '' }}>
+                                        {{ $router->name }} ({{ $router->host }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="interface">Interface</label>
+                            <select class="form-control" id="interface" name="interface" required disabled>
+                                <option value="">Select Router first</option>
+                            </select>
+                            <div id="interface-loading" class="spinner-border spinner-border-sm d-none" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <small class="form-text text-muted">Physical interface where PPPoE server will run</small>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="service_name">Service Name</label>
+                            <input type="text" class="form-control" id="service_name" name="service_name" required value="{{ old('service_name') }}">
+                            <small class="form-text text-muted">Unique name for the PPPoE service</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Create Service</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadInterfaces(routerId) {
+    if (!routerId) {
+        $('#interface').html('<option value="">Select Router first</option>').prop('disabled', true);
+        return;
+    }
+
+    $('#interface').prop('disabled', true);
+    $('#interface-loading').removeClass('d-none');
+    
+    $.ajax({
+        url: '{{ route("pppoe-services.get-interfaces") }}',
+        type: 'POST',
+        data: {
+            router_id: routerId,
+            _token: '{{ csrf_token() }}'
+        },
+        success: function(response) {
+            let options = '<option value="">Select Interface</option>';
+            response.interfaces.forEach(function(iface) {
+                options += `<option value="${iface}">${iface}</option>`;
+            });
+            
+            $('#interface').html(options).prop('disabled', false);
+            $('#interface-loading').addClass('d-none');
+        },
+        error: function(xhr) {
+            console.error(xhr);
+            $('#interface').html('<option value="">Error loading interfaces</option>');
+            $('#interface-loading').addClass('d-none');
+        }
+    });
+}
+</script>
+@endsection

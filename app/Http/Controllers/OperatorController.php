@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\IpPool;
 use App\Models\Package;
+use App\Models\PppoeService;
 use App\Models\Report;
 use App\Models\Router;
 use App\Models\RouterStat;
@@ -27,7 +28,7 @@ class OperatorController extends Controller
         return view('operator.dashboard');
     }
 
-    // CUSTOMER SECTION ========================================
+    // CUSTOMER SECTION ===================================================================================
 
     public function indexOperator()
     {
@@ -41,7 +42,6 @@ class OperatorController extends Controller
         ]);
     }
 
-    //function for add customer adn send to database
     public function storeCustomerOperator(Request $request)
     {
         // validation in form
@@ -67,8 +67,6 @@ class OperatorController extends Controller
         //while success, redirect to form and throwing success message
     }
 
-    //function for delete customer by id
-    //this function is aplied in delete button
     public function destroyCustomerOperator($id)
     {
         $customer_id = Customer::findOrFail($id);
@@ -126,7 +124,7 @@ class OperatorController extends Controller
         return view('operator.customer.customer_result', compact('customers'));
     }
 
-    //ACTIVATION CUSTOMER SECTION =============================
+    //ACTIVATION CUSTOMER SECTION ===========================================================================
     public function indexActivationCustomerOperator()
     {
         $customers = Customer::all();
@@ -205,7 +203,7 @@ class OperatorController extends Controller
         }
     }
 
-    // PACKAGE SECTION==============================
+    // PACKAGE SECTION ================================================================================
     public function indexPackageOperator()
     {
         // variable for get all package
@@ -291,7 +289,7 @@ class OperatorController extends Controller
         return redirect()->route('admin.package.view')->with('success', 'data berhasil dihapus');
     }
 
-    // INVOICE SECTION ==========================================================================
+    // INVOICE SECTION ================================================================================
     public function indexInvoiceOperator()
     {
         $invoices = Invoice::latest()->paginate(10);
@@ -366,7 +364,7 @@ class OperatorController extends Controller
         }
     }
 
-    // TRANSACTIONS SECTION
+    // TRANSACTIONS SECTION ============================================================================
     public function indexTransactionsOperator()
     {
         $transactions = Transaction::latest()->paginate(10);
@@ -390,7 +388,7 @@ class OperatorController extends Controller
         return view('operator.transactions.transactions_customer', compact('transactions'));
     }
 
-    //ROUTER SECTION ================================================
+    //ROUTER SECTION ===================================================================================
     public function indexOperatorRouter()
     {
         $routers = Router::all();
@@ -533,7 +531,7 @@ class OperatorController extends Controller
         }
     }
 
-    // IP POOL SECTION
+    // IP POOL SECTION ======================================================================================
     public function createIpPool()
     {
         $routers = Router::all();
@@ -631,7 +629,7 @@ class OperatorController extends Controller
             ]);
 
             $checkQuery = new Query('/ip/pool/print');
-           
+
 
             $checkQuery->where('name', $ipPool->name);
             $existingPools = $client->query($checkQuery)->read();
@@ -651,6 +649,95 @@ class OperatorController extends Controller
             return redirect()->route('operator.ip-pool.create')->with('success', 'Ip Pool berhasil dihapus');
         } catch (\Exception $e) {
             return back()->withErrors(["connection_error" => "gagal menghapus ip pool" . $e->getMessage()]);
+        }
+    }
+
+    // PPPOE SERVICE SECTION
+    public function createPppoeService()
+    {
+        $routers = Router::all();
+
+        $interfaces = [];
+        $selectedRouter = null;
+        return view('operator.pppoe.dashboard_pppoe-service', compact(
+            'routers',
+            'interfaces',
+            'selectedRouter'
+        ));
+    }
+
+    public function getInterfaces(Request $request)
+    {
+        $request->validate([
+            'router_id' => 'required|exists:routers,id'
+        ]);
+
+        $router = Router::findOrFail($request->router_id);
+
+        try {
+            $client = new Client([
+                'host' => $router->host,
+                'user' => $router->username,
+                'pass' => $router->password,
+                'port' => (int)$router->port,
+            ]);
+
+            // Ambil daftar interface dari MikroTik
+            $query = new Query('/interface/print');
+            $interfaces = $client->query($query)->read();
+
+            // Filter hanya interface fisik yang relevan (bisa disesuaikan)
+            $filteredInterfaces = array_filter($interfaces, function ($interface) {
+                return !empty($interface['name']) &&
+                    $interface['type'] !== 'pppoe-in' &&
+                    $interface['type'] !== 'pppoe-out' &&
+                    $interface['type'] !== 'bridge' &&
+                    $interface['type'] !== 'vlan';
+            });
+
+            return response()->json([
+                'interfaces' => array_column($filteredInterfaces, 'name')
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to get interfaces: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function storePppoeService(Request $request)
+    {
+        $validated = $request->validate([
+            'router_id' => 'required|exists:routers,id',
+            'interface' => 'required|string',
+            'service_name' => 'required|string|unique:pppoe_services,service_name'
+        ]);
+
+        $router = Router::findOrFail($validated['router_id']);
+        $password = $this->decryptPassword($router->password);
+        try {
+            $client = new Client([
+                'host' => $router->host,
+                'user' => $router->username,
+                'pass' => $password,
+                'port' => $router->port ?? 8728
+            ]);
+
+            dd($client);
+
+            $query = (new Query('/interface/pppoe-server/server/add'))
+                ->equal('service-name', $validated['service_name'])
+                ->equal('interface', $validated['interface'])
+                ->equal('disabled', 'no');
+
+            $response = $client->query($query)->read();
+
+            $pppoeService = PppoeService::create($validated);
+
+            return redirect()->route('operator.pppoe-services.create')
+                ->with('success', 'PPPoE service created successfully!');
+        } catch (\Exception $e) {
+            return redirect()->back()->withInput()->withErrors(["error" => "error while creating pppoe service" .  $e->getMessage()]);
         }
     }
 }

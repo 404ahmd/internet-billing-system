@@ -51,6 +51,12 @@
                         <p>IP Pool</p>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="{{route('operator.pppoe-service.create')}}">
+                        <i class="fas fa-project-diagram"></i>
+                        <p>PPPoE Service</p>
+                    </a>
+                </li>
 
                 <hr>
 

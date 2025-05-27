@@ -660,7 +660,7 @@ class AdminController extends Controller
                 'range' => $data['range'],
             ]);
 
-            return redirect()->back() // lebih baik redirect ke route tertentu
+            return redirect()->route('admin.router.view') // lebih baik redirect ke route tertentu
                 ->with('success', 'IP Pool berhasil ditambahkan');
         } catch (\Exception $e) {
             return back()

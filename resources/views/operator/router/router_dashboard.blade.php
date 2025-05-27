@@ -7,15 +7,26 @@
                 <div class="card-body">
                     <h2>Router MikroTik Monitoring</h2>
 
-                    @if (session('success'))
+                    
+                     @if (session('success'))
                         <div class="alert alert-success alert-dismissible fade show">
                             {{ session('success') }}
                             <button type="button" class="close" data-dismiss="alert">&times;</button>
                         </div>
                     @endif
 
-                    P
-
+                    @if ($errors->any())
+                        
+                        <div class="alert alert-danger alert-dismissible fade show">
+                            <ul class="mb-0">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                            <button type="button" class="close" data-dismiss="alert">&times;</button>
+                        </div>
+                    @endif
+                    
                     <!-- Form Connect -->
                     <div class="card mb-4">
                         <div class="card-header bg-primary text-white">
