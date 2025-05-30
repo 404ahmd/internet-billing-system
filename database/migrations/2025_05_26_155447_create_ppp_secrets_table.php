@@ -14,10 +14,14 @@ return new class extends Migration
         Schema::create('ppp_secrets', function (Blueprint $table) {
             $table->id();
             $table->foreignId('router_id')->constrained()->onDelete('cascade');
-            $table->foreignId('profile_id')->constrained('ppp_profiles')->onDelete('cascade');
-            $table->string('name'); // username
+            $table->string('name');
             $table->string('password');
             $table->string('service')->default('pppoe');
+            $table->string('profile');
+            $table->string('local_address')->nullable();
+            $table->string('remote_address')->nullable();
+            $table->string('comment')->nullable();
+
             $table->timestamps();
         });
     }

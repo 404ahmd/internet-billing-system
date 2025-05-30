@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('ppp_profiles', function (Blueprint $table) {
             $table->id();
             $table->foreignId('router_id')->constrained()->onDelete('cascade');
-            $table->foreignId('ip_pool_id')->constrained('ip_pools')->onDelete('cascade');
-            $table->string('name');
-            $table->string('local_address')->nullable();
+            $table->string('local_address')->nullable(); // string biasa
             $table->string('remote_address')->nullable();
+            $table->string('name');
+            $table->string('rate_limit')->nullable(); // Tambahan jika dibutuhkan
             $table->timestamps();
         });
     }

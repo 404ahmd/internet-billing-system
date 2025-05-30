@@ -48,6 +48,12 @@
                         <p>IP Pool</p>
                     </a>
                 </li>
+                 <li class="nav-item">
+                    <a href="{{ route('admin.ppp-profile.create') }}">
+                        <i class="fas fa-network-wired"></i>
+                        <p>PPPoE Profile</p>
+                    </a> 
+                </li>
 
                 <hr>
 

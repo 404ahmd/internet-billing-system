@@ -9,21 +9,16 @@ class PppProfiles extends Model
 {
     use HasFactory;
     protected $fillable = [
-        'router_id', 'ip_pool_id', 'name', 'local_address', 'remote_address'
+         'router_id',
+        'name',
+        'local_address',
+        'remote_address',
+        'rate_limit',
     ];
 
-    public function router()
+   public function router()
     {
         return $this->belongsTo(Router::class);
     }
 
-    public function ipPool()
-    {
-        return $this->belongsTo(IpPool::class);
-    }
-
-    public function secrets()
-    {
-        return $this->hasMany(PppSecret::class, 'profile_id');
-    }
 }

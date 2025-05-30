@@ -8,12 +8,15 @@ use App\Models\Invoice;
 use App\Models\IpPool;
 use App\Models\Package;
 use App\Models\PppoeService;
+use App\Models\PppProfiles;
+use App\Models\PppSecret;
 use App\Models\Report;
 use App\Models\Router;
 use App\Models\RouterStat;
 use App\Models\Transaction;
 use App\Services\RouterOsService;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -215,10 +218,8 @@ class OperatorController extends Controller
     // function for store new package to package table
     public function storePackageOperator(Request $request)
     {
-        // validation on input package form
         $request->validate([
             'name' => 'required',
-            'description' => 'required',
             'price' => 'required',
             'type' => 'required',
             'cycle' => 'required',
@@ -226,26 +227,23 @@ class OperatorController extends Controller
             'status' => 'required'
         ]);
 
-        //check if package is existing
-        $existing = Package::where('description', $request->description)->first();
-        if ($existing) {
-            //retun back with error message
-            return redirect()->back()->with('error', 'paket sudah tersedia');
+        try {
+            // ctreate new package adn store to database
+            Package::create([
+                'name' => $request->name,
+                'description' => $request->description,
+                'price' => $request->price,
+                'type' => $request->type,
+                'cycle' => $request->cycle,
+                'bandwidth' => $request->bandwidth,
+                'status' => $request->status
+            ]);
+
+            // return back if success and show the message
+            return redirect()->back()->with('success', 'paket berhasil ditambahkan');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Tidak bisa menambahkan paket');
         }
-
-        // ctreate new package adn store to database
-        Package::create([
-            'name' => $request->name,
-            'description' => $request->description,
-            'price' => $request->price,
-            'type' => $request->type,
-            'cycle' => $request->cycle,
-            'bandwidth' => $request->bandwidth,
-            'status' => $request->status
-        ]);
-
-        // return back if success and show the message
-        return redirect()->back()->with('success', 'paket berhasil ditambahkan');
     }
 
     public function editPacakgeOperator($id)
@@ -260,7 +258,6 @@ class OperatorController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required',
-            'description' => 'required',
             'price' => 'required',
             'type' => 'required',
             'cycle' => 'required',
@@ -271,7 +268,7 @@ class OperatorController extends Controller
         try {
             $pacakge = Package::findOrFail($id);
             $pacakge->update($validated);
-            return redirect()->route('admin.package.view')->with('success', 'paket berhasil diperbarui');
+            return redirect()->route('operator.package.view')->with('success', 'paket berhasil diperbarui');
         } catch (\Exception $e) {
             return back()->with('error', 'gagal memperbarui paket' . $e->getMessage())->withInput();
         }
@@ -444,12 +441,12 @@ class OperatorController extends Controller
 
         try {
             // Decrypt password sebelum digunakan
-            $decryptedPassword = decrypt($router->password);
+            $password = $this->decryptPassword($router->password);
 
             $client = new Client([
                 'host' => $router->host,
                 'user' => $router->username,
-                'pass' => $decryptedPassword,
+                'pass' => $password,
                 'port' => $router->port ?? 8728,
                 'timeout' => 3,
                 'attempts' => 1
@@ -652,70 +649,68 @@ class OperatorController extends Controller
         }
     }
 
-    // PPPOE SERVICE SECTION
-    public function createPppoeService()
+    // PPP PROFILE SECTION ========================================================================
+    public function createPppProfile()
     {
         $routers = Router::all();
-
-        $interfaces = [];
-        $selectedRouter = null;
-        return view('operator.pppoe.dashboard_pppoe-service', compact(
-            'routers',
-            'interfaces',
-            'selectedRouter'
-        ));
+        $profiles = PppProfiles::with('router')->get();
+        return view('operator.pppoe.ppp-profile', [
+            'routers' => $routers,
+            'profiles' => $profiles,
+        ]);
     }
 
-    public function getInterfaces(Request $request)
+    public function storePppProfile(Request $request)
     {
-        $request->validate([
-            'router_id' => 'required|exists:routers,id'
+        $validated = $request->validate([
+            'router_id' => 'required|exists:routers,id',
+            'name' => 'required|string',
+            'local_address' => 'nullable|string',
+            'remote_address' => 'nullable|string',
+            'rate_limit' => 'nullable|string',
         ]);
 
-        $router = Router::findOrFail($request->router_id);
+        $router = Router::findOrFail($validated['router_id']);
+        $password = $this->decryptPassword($router->password);
 
         try {
             $client = new Client([
                 'host' => $router->host,
                 'user' => $router->username,
-                'pass' => $router->password,
-                'port' => (int)$router->port,
+                'pass' => $password,
+                'port' => $router->port ?? 8728,
             ]);
 
-            // Ambil daftar interface dari MikroTik
-            $query = new Query('/interface/print');
-            $interfaces = $client->query($query)->read();
+            $query = new Query('/ppp/profile/add');
+            $query->equal('name', $validated['name']);
+            if (!empty($validated['local_address'])) {
+                $query->equal('local-address', $validated['local_address']);
+            }
 
-            // Filter hanya interface fisik yang relevan (bisa disesuaikan)
-            $filteredInterfaces = array_filter($interfaces, function ($interface) {
-                return !empty($interface['name']) &&
-                    $interface['type'] !== 'pppoe-in' &&
-                    $interface['type'] !== 'pppoe-out' &&
-                    $interface['type'] !== 'bridge' &&
-                    $interface['type'] !== 'vlan';
-            });
+            if (!empty($validated['remote_address'])) {
+                $query->equal('remote-address', $validated['remote_address']);
+            }
+            if ($validated['rate_limit']) {
+                $query->equal('rate-limit', $validated['rate_limit']);
+            }
 
-            return response()->json([
-                'interfaces' => array_column($filteredInterfaces, 'name')
-            ]);
+            $client->query($query)->read();
+
+            PppProfiles::create($validated);
+
+            return redirect()->route('operator.ppp-profile.create')->with('success', 'Profile Berhasil Ditambahkan');
         } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Failed to get interfaces: ' . $e->getMessage()
-            ], 500);
+            return back()->withErrors(["error", "Gagal membuat profile" . $e->getMessage()]);
         }
     }
 
-    public function storePppoeService(Request $request)
+    public function removePppProfile($id)
     {
-        $validated = $request->validate([
-            'router_id' => 'required|exists:routers,id',
-            'interface' => 'required|string',
-            'service_name' => 'required|string|unique:pppoe_services,service_name'
-        ]);
-
-        $router = Router::findOrFail($validated['router_id']);
-        $password = $this->decryptPassword($router->password);
+        $profile = PppProfiles::findOrFail($id);
         try {
+            $router = $profile->router;
+            $password = $this->decryptPassword($router->password);
+
             $client = new Client([
                 'host' => $router->host,
                 'user' => $router->username,
@@ -723,21 +718,87 @@ class OperatorController extends Controller
                 'port' => $router->port ?? 8728
             ]);
 
-            dd($client);
+            $query = new Query('/ppp/profile/print');
+            $query->where('name', $profile->name);
 
-            $query = (new Query('/interface/pppoe-server/server/add'))
-                ->equal('service-name', $validated['service_name'])
-                ->equal('interface', $validated['interface'])
-                ->equal('disabled', 'no');
+            $result = $client->query($query)->read();
 
-            $response = $client->query($query)->read();
+            if (!empty($result)) {
+                $profileId = $result[0]['.id']; // Dapatkan internal MikroTik ID
+                $deleteQuery = new Query('/ppp/profile/remove');
+                $deleteQuery->equal('.id', $profileId);
 
-            $pppoeService = PppoeService::create($validated);
+                $client->query($deleteQuery)->read();
+            }
 
-            return redirect()->route('operator.pppoe-services.create')
-                ->with('success', 'PPPoE service created successfully!');
+            $profile->delete();
+
+            return redirect()->route('operator.ppp-profile.create')->with("success", 'profile ppp brhasil dihapus');
         } catch (\Exception $e) {
-            return redirect()->back()->withInput()->withErrors(["error" => "error while creating pppoe service" .  $e->getMessage()]);
+            return back()->withErrors(['error', 'ppp profile tidak dapat dihapus' . $e->getMessage()]);
         }
     }
+
+
+        // PPP SECRETE SECTION =======================================================================
+
+        public function createPppSecretes(){
+            $routers = Router::all();
+            $profiles = PppProfiles::all();
+            $secrets = PppSecret::all();
+            return view('operator.pppoe.ppp-secret', [
+                'routers' => $routers,
+                'profiles' => $profiles,
+                'secrets' => $secrets
+            ]);
+        }
+
+        public function storePppSecrets(Request $request){
+            $validated = $request->validate([
+                'router_id' => 'required|exists:routers,id',
+                'name' => 'required|string', 
+                'password' => 'required|string', 
+                'service' => 'required|string', 
+                'profile' => 'required', 
+                'local_address' => 'nullable|string', 
+                'remote_address' => 'nullable|string', 
+                'comment' => 'nullable'
+            ]);
+
+            $router = Router::findOrFail($validated['router_id']);
+            $password = $this->decryptPassword($router->password);
+
+            try {
+                $client = new Client([
+                'host' => $router->host,
+                'user' => $router->username,
+                'pass' => $password,
+                'port' => $router->port ?? 8728,
+            ]);
+
+                $query = new Query('/ppp/secret/add');
+                $query->equal('name', $validated['name'])
+                ->equal('password', $validated['password'])
+                ->equal('service', $validated['service'])
+                ->equal('profile', $validated['profile'])
+                ->equal('comment', $validated['comment']);
+
+
+                if (!empty($validated['local_address'])) {
+                    $query->equal('local-address', $validated['local_address']);
+                }
+
+                if (!empty($validated['remote_address'])) {
+                    $query->equal('remote-address', $validated['remote_address']);
+                }
+
+                $client->query($query)->read();
+
+                PppSecret::create($validated);
+
+                return redirect()->route('operator.ppp-secret.create')->with('success', 'secret berhasil ditambahkan');
+            } catch (\Exception $e) {
+                return redirect()->back()->withErrors(["error", "gagal menambah secret baru" . $e->getMessage()]);
+            }
+        }
 }

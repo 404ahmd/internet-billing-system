@@ -1,4 +1,3 @@
-
 <!-- Sidebar -->
 <div class="sidebar sidebar-style-2">
     <div class="sidebar-wrapper scrollbar scrollbar-inner">
@@ -8,7 +7,7 @@
                     <a href="{{ route('operator.dashboard') }}">
                         <i class="fas fa-tachometer-alt"></i>
                         <p>Dashboard</p></br>
-                        <p> {{ Auth::user()->role; }}</p>
+                        <p> {{ Auth::user()->role }}</p>
                     </a>
 
 
@@ -46,15 +45,22 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{route('operator.ip-pool.create')}}">
+                    <a href="{{ route('operator.ip-pool.create') }}">
                         <i class="fas fa-project-diagram"></i>
                         <p>IP Pool</p>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{route('operator.pppoe-service.create')}}">
-                        <i class="fas fa-project-diagram"></i>
-                        <p>PPPoE Service</p>
+                    <a href="{{ route('operator.ppp-profile.create') }}">
+                        <i class="fas fa-network-wired"></i>
+                        <p>PPPoE Profile</p>
+                    </a>
+                </li>
+
+                 <li class="nav-item">
+                    <a href="{{route('operator.ppp-secret.create')}}">
+                        <i class="fas fa-solid fa-wifi"></i>
+                        <p>PPPoE Secret</p>
                     </a>
                 </li>
 
@@ -117,4 +123,3 @@
     </div>
 </div>
 <!-- End Sidebar -->
-

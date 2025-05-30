@@ -10,6 +10,7 @@
                     <h1 class="text-2xl font-bold mb-6">Daftar Customer Dengan Invoice Belum Dibayar</h1>
 
                     <div class="bg-white shadow-md rounded-lg overflow-hidden mt-4">
+                        
                         <table class="table-auto w-full border mb-6">
                             <thead class="bg-gray-200">
                                 <tr>

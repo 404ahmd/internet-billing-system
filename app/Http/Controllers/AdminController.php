@@ -6,14 +6,17 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\IpPool;
 use App\Models\Package;
+use App\Models\PppProfiles;
 use App\Models\Report;
 use App\Models\Router;
 use App\Models\Transaction;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use RouterOS\Client;
 use RouterOS\Query;
+use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
@@ -259,7 +262,6 @@ class AdminController extends Controller
         // validation on input package form
         $request->validate([
             'name' => 'required',
-            'description' => 'required',
             'price' => 'required',
             'type' => 'required',
             'cycle' => 'required',
@@ -267,14 +269,8 @@ class AdminController extends Controller
             'status' => 'required'
         ]);
 
-        //check if package is existing
-        $existing = Package::where('description', $request->description)->first();
-        if ($existing) {
-            //retun back with error message
-            return redirect()->back()->with('error', 'paket sudah tersedia');
-        }
-
-        // ctreate new package adn store to database
+        try {
+             // ctreate new package adn store to database
         Package::create([
             'name' => $request->name,
             'description' => $request->description,
@@ -287,7 +283,13 @@ class AdminController extends Controller
 
         // return back if success and show the message
         return redirect()->back()->with('success', 'paket berhasil ditambahkan');
-    }
+   
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Tidak bisa menambahkan paket');
+        }
+        
+
+        }
 
     public function editPacakgeAdmin($id)
     {
@@ -301,7 +303,6 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required',
-            'description' => 'required',
             'price' => 'required',
             'type' => 'required',
             'cycle' => 'required',
@@ -467,6 +468,23 @@ class AdminController extends Controller
         ]);
     }
 
+    // DECRYPT PASSWORD
+
+    private function decryptPassword($encryptedPassword)
+    {
+        try {
+            // Jika password dienkripsi dengan Laravel encrypt()
+            if (Str::startsWith($encryptedPassword, 'eyJpdiI6')) {
+                return Crypt::decrypt($encryptedPassword);
+            }
+
+            // Jika password tidak dienkripsi (plain text)
+            return $encryptedPassword;
+        } catch (\Exception $e) {
+            throw new \Exception("Failed to decrypt router password: " . $e->getMessage());
+        }
+    }
+
     // ROUTER SECTION ======================================
     //ROUTER SECTION ================================================
     public function indexAdminRouter()
@@ -524,12 +542,11 @@ class AdminController extends Controller
 
         try {
             // Decrypt password sebelum digunakan
-            $decryptedPassword = decrypt($router->password);
-
+            $password = $this->decryptPassword($router->password);
             $client = new Client([
                 'host' => $router->host,
                 'user' => $router->username,
-                'pass' => $decryptedPassword,
+                'pass' => $password,
                 'port' => $router->port ?? 8728,
                 'timeout' => 3,
                 'attempts' => 1
@@ -712,6 +729,92 @@ class AdminController extends Controller
             return redirect()->route('admin.ip-pool.create')->with('success', 'Ip Pool berhasil dihapus');
         } catch (\Exception $e) {
             return back()->withErrors(["connection_error" => "gagal menghapus ip pool" . $e->getMessage()]);
+        }
+    }
+
+    public function createPppProfile()
+    {
+        $routers = Router::all();
+        $profiles = PppProfiles::with('router')->get();
+        return view('admin.pppoe.ppp-profile', [
+            'routers' => $routers,
+            'profiles' => $profiles,
+        ]);
+    }
+
+    public function storePppProfile(Request $request)
+    {
+        $validated = $request->validate([
+            'router_id' => 'required|exists:routers,id',
+            'name' => 'required|string',
+            'local_address' => 'required|exists:ip_pools,id',
+            'remote_address' => 'required|exists:ip_pools,id',
+            'rate_limit' => 'nullable|string',
+        ]);
+
+        $router = Router::findOrFail($validated['router_id']);
+        $password = $this->decryptPassword($router->password);
+
+        try {
+            $client = new Client([
+                'host' => $router->host,
+                'user' => $router->username,
+                'pass' => $password,
+                'port' => $router->port ?? 8728,
+            ]);
+
+            $localPoolName = IpPool::findOrFail($validated['local_address'])->name;
+            $remotePoolName = IpPool::findOrFail($validated['remote_address'])->name;
+            $query = new Query('/ppp/profile/add');
+            $query->equal('name', $validated['name'])
+                ->equal('local-address', $localPoolName)
+                ->equal('remote-address', $remotePoolName);
+
+            if ($validated['rate_limit']) {
+                $query->equal('rate-limit', $validated['rate_limit']);
+            }
+
+            $client->query($query)->read();
+
+            PppProfiles::create($validated);
+
+            return redirect()->route('admin.ppp-profile.create')->with('success', 'Profile Berhasil Ditambahkan');
+        } catch (\Exception $e) {
+            return back()->withErrors(["error", "Gagal membuat profile" . $e->getMessage()]);
+        }
+    }
+
+    public function removePppProfile($id){
+        $profile = PppProfiles::findOrFail($id);
+        try {
+            $router = $profile->router;
+            $password = $this->decryptPassword($router->password);
+
+            $client = new Client([
+                'host' => $router->host,
+                'user' => $router->username,
+                'pass' => $password,
+                'port' => $router->port ?? 8728
+            ]);
+
+             $query = new Query('/ppp/profile/print');
+        $query->where('name', $profile->name);
+
+        $result = $client->query($query)->read();
+
+        if (!empty($result)) {
+             $profileId = $result[0]['.id']; // Dapatkan internal MikroTik ID
+            $deleteQuery = new Query('/ppp/profile/remove');
+            $deleteQuery->equal('.id', $profileId);
+
+            $client->query($deleteQuery)->read();
+        }
+
+        $profile->delete();
+
+        return redirect()->route('admin.ppp-profile.create')->with("success", 'profile ppp brhasil dihapus');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error', 'ppp profile tidak dapat dihapus' . $e->getMessage()]);
         }
     }
 }
