@@ -464,6 +464,15 @@ class AdminController extends Controller
         }
     }
 
+     public function markAsPaid(Invoice $invoice){
+        $invoice->update([
+            'status' => 'paid',
+            'paid_at' =>now(),
+        ]);
+
+        return back()->with('success', 'Sudah lunas');
+    }
+
     // TRANSACTIONS SECTION
     public function indexTransactionsAdmin()
     {

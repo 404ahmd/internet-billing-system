@@ -101,16 +101,91 @@ class FinanceController extends Controller
     }
 
     public function customerArrears(){
-        $customers = Customer::whereHas('invoices', function($query){
-            $query->where('status', 'unpaid');
-        })
-        ->with(['invoices' => function($query){
-            $query->where('status', 'unpaid')
-            ->orderBy('due_date', 'asc');
-        }])->paginate(10);
+         $invoices = Invoice::with('customer')
+        ->where('status', 'unpaid')->paginate(10);
 
         return view('finance.customer_arrears', [
-            'customers' => $customers,
+            'invoices' => $invoices,
         ]);
+    }
+
+    public function search(Request $request){
+         $request->validate([
+            'keyword' => 'nullable|string|max:255',
+            'status' => 'nullable|in:active,inactive,terminated'
+        ]);
+
+        $keyword = $request->keyword;
+        $status = $request->status;
+
+        $query = DB::table('customers');
+
+        if ($keyword) {
+            $query->where(function ($q) use ($keyword) {
+                $q->where('name', 'like', '%' . $keyword . '%')
+                    ->orWhere('username', 'like', '%' . $keyword . '%');
+            });
+        }
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        $customers = $query->paginate(10);
+
+        // Ambil kembali data lain yang dibutuhkan view
+        $packages = \App\Models\Package::all();
+        $invoices = \App\Models\Invoice::all();
+
+        return view('finance.customer_data', [
+            'customers' => $customers,
+            'packages' => $packages,
+            'invoices' => $invoices,
+            'keyword' => $keyword,
+            'status' => $status,
+        ]);
+    }
+
+    public function searchInvoice(Request $request){
+        $request->validate([
+            'customer_name' => 'nullable|string|max:255',
+            'status' => 'nullable|in:paid,unpaid,overdue',
+        ]);
+
+        $keyword = $request->input('customer_name');
+        $status = $request->input('status');
+
+        $invoices = Invoice::with(['customer', 'package'])
+            ->when($keyword, function ($query, $keyword) {
+                $query->whereHas('customer', function ($q) use ($keyword) {
+                    $q->where('name', 'like', '%' . $keyword . '%');
+                });
+            })
+            ->when($status, function ($query, $status) {
+                if ($status === 'paid') {
+                    $query->where('status', 'paid');
+                } elseif ($status === 'unpaid') {
+                    $query->where('status', 'unpaid')
+                        ->whereDate('due_date', '>=', now());
+                } elseif ($status === 'overdue') {
+                    $query->where('status', 'unpaid')
+                        ->whereDate('due_date', '<', now());
+                }
+            })
+            ->latest()
+            ->paginate(10)
+            ->appends($request->query()); // agar filter tetap saat paginate
+
+        return view('admin.invoice.invoice_customer', compact('invoices', 'keyword', 'status'));
+    
+    }
+
+    public function markAsPaid(Invoice $invoice){
+        $invoice->update([
+            'status' => 'paid',
+            'paid_at' =>now(),
+        ]);
+
+        return back()->with('success', 'Sudah lunas');
     }
 }

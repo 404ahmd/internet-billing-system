@@ -62,6 +62,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/finance/data/customers', [FinanceController::class, 'getCustomerData'])->name('finance.data.customers');
     Route::get('/finance/report', [FinanceController::class, 'activityReport'])->name('finance.report');
     Route::get('/finance/customer/arrears', [FinanceController::class, 'customerArrears'])->name('finance.customer.arrears');
+    Route::get('/finance/customer/search', [FinanceController::class, 'search'])->name('finance.customer.search');
+    Route::get('/finance/invoice/search', [FinanceController::class, 'searchInvoice'])->name('finance.invoices.search');
+    Route::patch('/finance/{invoice}/markAsPaid', [FinanceController::class, 'markAsPaid'])->name('finance.invoice.markAsPaid');
 
     //ADMININSTRATOR======================
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
@@ -89,6 +92,8 @@ Route::middleware(['auth'])->group(function () {
     Route::put('admin/invoices/{invoice}', [AdminController::class, 'updateInvoiceAdmin'])->name('admin.invoices.update');
     Route::get('admin/invoices/search', [AdminController::class, 'searchInvoiceAdmin'])->name('admin.invoices.search');
     Route::delete('admin/invoice/{invoice}', [AdminController::class, 'destroyInvoiceAdmin'])->name('admin.invoice.delete');
+    Route::patch('/admin/{invoice}/markAsPaid', [AdminController::class, 'markAsPaid'])->name('admin.invoice.markAsPaid');
+
 
     Route::get('admin/transaction/search', [AdminController::class, 'searchTransactionsAdmin'])->name('admin.transaction.search');
     Route::get('admin/transaction/view', [AdminController::class, 'indexTransactionsAdmin'])->name('admin.transaction.view');

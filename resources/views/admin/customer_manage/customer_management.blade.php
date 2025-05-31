@@ -47,6 +47,7 @@
 
                                     <div class="mb-3">
                                         <label for="phone" class="form-label">Telpon</label>
+                                        <small>Harus diawali dengan 62</small>
                                         <input type="text" id="phone" name="phone" class="form-control" required>
                                     </div>
 
