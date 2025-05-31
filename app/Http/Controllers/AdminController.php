@@ -7,6 +7,7 @@ use App\Models\Invoice;
 use App\Models\IpPool;
 use App\Models\Package;
 use App\Models\PppProfiles;
+use App\Models\PppSecret;
 use App\Models\Report;
 use App\Models\Router;
 use App\Models\Transaction;
@@ -160,12 +161,39 @@ class AdminController extends Controller
     public function search(Request $request)
     {
         $request->validate([
-            'keyword' => 'string|max:255'
+            'keyword' => 'nullable|string|max:255',
+            'status' => 'nullable|in:active,inactive,terminated'
         ]);
 
         $keyword = $request->keyword;
-        $customers = DB::table('customers')->where('name', 'like', '%' . $keyword . '%')->paginate();
-        return view('admin.customer_manage.customer_result', compact('customers'));
+        $status = $request->status;
+
+        $query = DB::table('customers');
+
+        if ($keyword) {
+            $query->where(function ($q) use ($keyword) {
+                $q->where('name', 'like', '%' . $keyword . '%')
+                    ->orWhere('username', 'like', '%' . $keyword . '%');
+            });
+        }
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        $customers = $query->paginate(10);
+
+        // Ambil kembali data lain yang dibutuhkan view
+        $packages = \App\Models\Package::all();
+        $invoices = \App\Models\Invoice::all();
+
+        return view('admin.customer_manage.customer_management', [
+            'customers' => $customers,
+            'packages' => $packages,
+            'invoices' => $invoices,
+            'keyword' => $keyword,
+            'status' => $status,
+        ]);
     }
 
     // ACTIVATION CUSTOMER SECTION
@@ -270,26 +298,23 @@ class AdminController extends Controller
         ]);
 
         try {
-             // ctreate new package adn store to database
-        Package::create([
-            'name' => $request->name,
-            'description' => $request->description,
-            'price' => $request->price,
-            'type' => $request->type,
-            'cycle' => $request->cycle,
-            'bandwidth' => $request->bandwidth,
-            'status' => $request->status
-        ]);
+            // ctreate new package adn store to database
+            Package::create([
+                'name' => $request->name,
+                'description' => $request->description,
+                'price' => $request->price,
+                'type' => $request->type,
+                'cycle' => $request->cycle,
+                'bandwidth' => $request->bandwidth,
+                'status' => $request->status
+            ]);
 
-        // return back if success and show the message
-        return redirect()->back()->with('success', 'paket berhasil ditambahkan');
-   
+            // return back if success and show the message
+            return redirect()->back()->with('success', 'paket berhasil ditambahkan');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Tidak bisa menambahkan paket');
         }
-        
-
-        }
+    }
 
     public function editPacakgeAdmin($id)
     {
@@ -353,16 +378,38 @@ class AdminController extends Controller
 
     public function searchInvoiceAdmin(Request $request)
     {
+        $request->validate([
+            'customer_name' => 'nullable|string|max:255',
+            'status' => 'nullable|in:paid,unpaid,overdue',
+        ]);
+
         $keyword = $request->input('customer_name');
+        $status = $request->input('status');
 
-        $invoices = Invoice::with('customer')
-            ->whereHas('customer', function ($query) use ($keyword) {
-                $query->where('name', 'like', '%' . $keyword . '%');
+        $invoices = Invoice::with(['customer', 'package'])
+            ->when($keyword, function ($query, $keyword) {
+                $query->whereHas('customer', function ($q) use ($keyword) {
+                    $q->where('name', 'like', '%' . $keyword . '%');
+                });
             })
-            ->paginate(10);
+            ->when($status, function ($query, $status) {
+                if ($status === 'paid') {
+                    $query->where('status', 'paid');
+                } elseif ($status === 'unpaid') {
+                    $query->where('status', 'unpaid')
+                        ->whereDate('due_date', '>=', now());
+                } elseif ($status === 'overdue') {
+                    $query->where('status', 'unpaid')
+                        ->whereDate('due_date', '<', now());
+                }
+            })
+            ->latest()
+            ->paginate(10)
+            ->appends($request->query()); // agar filter tetap saat paginate
 
-        return view('admin.invoice.invoice_customer', compact('invoices', 'keyword'));
+        return view('admin.invoice.invoice_customer', compact('invoices', 'keyword', 'status'));
     }
+
 
     //get form invoice update
     public function editInvoiceAdmin(Invoice $invoice)
@@ -444,16 +491,11 @@ class AdminController extends Controller
     //CUSTOMER ARREARS
     public function adminCustomerArrears()
     {
-        $customers = Customer::whereHas('invoices', function ($query) {
-            $query->where('status', 'unpaid');
-        })
-            ->with(['invoices' => function ($query) {
-                $query->where('status', 'unpaid')
-                    ->orderBy('due_date', 'asc');
-            }])->paginate(10);
+        $invoices = Invoice::with('customer')
+        ->where('status', 'unpaid')->paginate(10);
 
         return view('admin.customer_manage.customer_arrears', [
-            'customers' => $customers,
+            'invoices' => $invoices,
         ]);
     }
 
@@ -485,7 +527,6 @@ class AdminController extends Controller
         }
     }
 
-    // ROUTER SECTION ======================================
     //ROUTER SECTION ================================================
     public function indexAdminRouter()
     {
@@ -611,7 +652,7 @@ class AdminController extends Controller
         return sprintf('%d hari %d jam %d menit', $days, $hours, $minutes);
     }
 
-     // IP POOL SECTION
+    // IP POOL SECTION
     public function createIpPool()
     {
         $routers = Router::all();
@@ -709,7 +750,7 @@ class AdminController extends Controller
             ]);
 
             $checkQuery = new Query('/ip/pool/print');
-            
+
 
             $checkQuery->where('name', $ipPool->name);
             $existingPools = $client->query($checkQuery)->read();
@@ -784,7 +825,8 @@ class AdminController extends Controller
         }
     }
 
-    public function removePppProfile($id){
+    public function removePppProfile($id)
+    {
         $profile = PppProfiles::findOrFail($id);
         try {
             $router = $profile->router;
@@ -797,24 +839,123 @@ class AdminController extends Controller
                 'port' => $router->port ?? 8728
             ]);
 
-             $query = new Query('/ppp/profile/print');
-        $query->where('name', $profile->name);
+            $query = new Query('/ppp/profile/print');
+            $query->where('name', $profile->name);
 
-        $result = $client->query($query)->read();
+            $result = $client->query($query)->read();
 
-        if (!empty($result)) {
-             $profileId = $result[0]['.id']; // Dapatkan internal MikroTik ID
-            $deleteQuery = new Query('/ppp/profile/remove');
-            $deleteQuery->equal('.id', $profileId);
+            if (!empty($result)) {
+                $profileId = $result[0]['.id']; // Dapatkan internal MikroTik ID
+                $deleteQuery = new Query('/ppp/profile/remove');
+                $deleteQuery->equal('.id', $profileId);
 
-            $client->query($deleteQuery)->read();
-        }
+                $client->query($deleteQuery)->read();
+            }
 
-        $profile->delete();
+            $profile->delete();
 
-        return redirect()->route('admin.ppp-profile.create')->with("success", 'profile ppp brhasil dihapus');
+            return redirect()->route('admin.ppp-profile.create')->with("success", 'profile ppp brhasil dihapus');
         } catch (\Exception $e) {
             return back()->withErrors(['error', 'ppp profile tidak dapat dihapus' . $e->getMessage()]);
+        }
+    }
+
+    // PPP SECRET SECTION =======================================================================
+
+    public function createPppSecretes()
+    {
+        $routers = Router::all();
+        $profiles = PppProfiles::all();
+        $secrets = PppSecret::all();
+        return view('admin.pppoe.ppp-secret', [
+            'routers' => $routers,
+            'profiles' => $profiles,
+            'secrets' => $secrets
+        ]);
+    }
+
+    public function storePppSecrets(Request $request)
+    {
+        $validated = $request->validate([
+            'router_id' => 'required|exists:routers,id',
+            'name' => 'required|string',
+            'password' => 'required|string',
+            'service' => 'required|string',
+            'profile' => 'required',
+            'local_address' => 'nullable|string',
+            'remote_address' => 'nullable|string',
+            'comment' => 'nullable'
+        ]);
+
+        $router = Router::findOrFail($validated['router_id']);
+        $password = $this->decryptPassword($router->password);
+
+        try {
+            $client = new Client([
+                'host' => $router->host,
+                'user' => $router->username,
+                'pass' => $password,
+                'port' => $router->port ?? 8728,
+            ]);
+
+            $query = new Query('/ppp/secret/add');
+            $query->equal('name', $validated['name'])
+                ->equal('password', $validated['password'])
+                ->equal('service', $validated['service'])
+                ->equal('profile', $validated['profile'])
+                ->equal('comment', $validated['comment']);
+
+
+            if (!empty($validated['local_address'])) {
+                $query->equal('local-address', $validated['local_address']);
+            }
+
+            if (!empty($validated['remote_address'])) {
+                $query->equal('remote-address', $validated['remote_address']);
+            }
+
+            $client->query($query)->read();
+
+            PppSecret::create($validated);
+
+            return redirect()->route('admin.ppp-secret.create')->with('success', 'secret berhasil ditambahkan');
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(["error", "gagal menambah secret baru" . $e->getMessage()]);
+        }
+    }
+
+    public function removePppSecrets($id)
+    {
+        $secrets = PppSecret::findOrFail($id);
+
+        try {
+            $router = $secrets->router;
+            $password = $this->decryptPassword($router->password);
+            $client = new Client([
+                'host' => $router->host,
+                'user' => $router->username,
+                'pass' => $password,
+                'port' => $router->port ?? 8728
+            ]);
+
+            $query = new Query('/ppp/secret/print');
+            $query->where('name', $secrets->name);
+
+            $result = $client->query($query)->read();
+
+            if (!empty($result)) {
+                $secretId = $result[0]['.id']; // Dapatkan internal MikroTik ID
+                $deleteQuery = new Query('/ppp/secret/remove');
+                $deleteQuery->equal('.id', $secretId);
+
+
+                $client->query($deleteQuery)->read();
+            }
+
+            $secrets->delete();
+            return redirect()->route('admin.ppp-secret.create')->with('success', 'secret berhasil dihapus');
+        } catch (\Exception $e) {
+            return back()->withErrors(["error", "secret tidak bisa dihapus " . $e->getMessage()]);
         }
     }
 }

@@ -45,7 +45,7 @@ Route::middleware(['auth'])->group(function () {
         return view('operator.dum_content');
     })->name('dump');
 
-    
+
     Route::get('/user/manager', [DashboardController::class, 'manager'])->name('user.manager');
     Route::get('/dashboard/admin', [AdminController::class, 'dashboard'])->name('dashboard.admin');
 
@@ -104,12 +104,16 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/admin/router/{router}/destroy', [AdminController::class, 'destroyRouter'])->name('admin.destroy.router');
 
     Route::get('/admin/ip-pool/create', [AdminController::class, 'createIpPool'])->name('admin.ip-pool.create');
-   Route::post('/admin/ip-pool/store', [AdminController::class, 'storeIpPool'])->name('admin.ip-pool.store');
-   Route::delete('/admin/ip-pool/{id}/destroy', [AdminController::class, 'destroyIpPool'])->name('admin.ip-pool.destroy');
+    Route::post('/admin/ip-pool/store', [AdminController::class, 'storeIpPool'])->name('admin.ip-pool.store');
+    Route::delete('/admin/ip-pool/{id}/destroy', [AdminController::class, 'destroyIpPool'])->name('admin.ip-pool.destroy');
 
-      Route::get('/admin/ppp-profile/create', [AdminController::class, 'createPppProfile'])->name('admin.ppp-profile.create');
-   Route::post('/admin/ppp-profile/post', [AdminController::class, 'storePppProfile'])->name('admin.ppp-profile.store');
-   Route::delete('/admin/ppp-profile/{id}/remove', [AdminController::class, 'removePppProfile'])->name('admin.ppp-profile.remove');
+    Route::get('/admin/ppp-secret/create', [AdminController::class, 'createPppSecretes'])->name('admin.ppp-secret.create');
+    Route::post('/admin/ppp-secret/store', [AdminController::class, 'storePppSecrets'])->name('admin.ppp-secret.store');
+    Route::delete('/admin/ppp-secret/{id}/remove', [AdminController::class, 'removePppSecrets'])->name('admin.ppp-secret.remove');
+
+    Route::get('/admin/ppp-profile/create', [AdminController::class, 'createPppProfile'])->name('admin.ppp-profile.create');
+    Route::post('/admin/ppp-profile/post', [AdminController::class, 'storePppProfile'])->name('admin.ppp-profile.store');
+    Route::delete('/admin/ppp-profile/{id}/remove', [AdminController::class, 'removePppProfile'])->name('admin.ppp-profile.remove');
 
     // OPERATOR =====================
     Route::get('/operator/dashboard', [OperatorController::class, 'dashboard'])->name('operator.dashboard');
@@ -144,15 +148,16 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/operator/router/{id}/status', [OperatorController::class, 'getOperatorRouterStatus'])->name('operator.router.status');
     Route::delete('/operator/router/{router}/destroy', [OperatorController::class, 'destroyRouter'])->name('operator.destroy.router');
 
-   Route::get('/operator/ip-pool/create', [OperatorController::class, 'createIpPool'])->name('operator.ip-pool.create');
-   Route::post('/operator/ip-pool/store', [OperatorController::class, 'storeIpPool'])->name('operator.ip-pool.store');
-   Route::delete('/operator/ip-pool/{id}/destroy', [OperatorController::class, 'destroyIpPool'])->name('operator.ip-pool.destroy');
+    Route::get('/operator/ip-pool/create', [OperatorController::class, 'createIpPool'])->name('operator.ip-pool.create');
+    Route::post('/operator/ip-pool/store', [OperatorController::class, 'storeIpPool'])->name('operator.ip-pool.store');
+    Route::delete('/operator/ip-pool/{id}/destroy', [OperatorController::class, 'destroyIpPool'])->name('operator.ip-pool.destroy');
 
-   Route::get('/operator/ppp-profile/create', [OperatorController::class, 'createPppProfile'])->name('operator.ppp-profile.create');
-   Route::post('/operator/ppp-profile/post', [OperatorController::class, 'storePppProfile'])->name('operator.ppp-profile.store');
-   Route::delete('/operator/ppp-profile/{id}/remove', [OperatorController::class, 'removePppProfile'])->name('operator.ppp-profile.remove');
+    Route::get('/operator/ppp-profile/create', [OperatorController::class, 'createPppProfile'])->name('operator.ppp-profile.create');
+    Route::post('/operator/ppp-profile/post', [OperatorController::class, 'storePppProfile'])->name('operator.ppp-profile.store');
+    Route::delete('/operator/ppp-profile/{id}/remove', [OperatorController::class, 'removePppProfile'])->name('operator.ppp-profile.remove');
 
-   Route::get('/operator/ppp-secret/create', [OperatorController::class, 'createPppSecretes'])->name('operator.ppp-secret.create');
-   Route::post('/operator/ppp-secret/store', [OperatorController::class, 'storePppSecrets'])->name('operator.ppp-secret.store');
+    Route::get('/operator/ppp-secret/create', [OperatorController::class, 'createPppSecretes'])->name('operator.ppp-secret.create');
+    Route::post('/operator/ppp-secret/store', [OperatorController::class, 'storePppSecrets'])->name('operator.ppp-secret.store');
+    Route::delete('/operator/ppp-secret/{id}/remove', [OperatorController::class, 'removePppSecrets'])->name('operator.ppp-secret.remove');
 });
 Route::get('/dashboard', [DashboardController::class, 'index']);

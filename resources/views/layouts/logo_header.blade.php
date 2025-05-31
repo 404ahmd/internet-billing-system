@@ -1,6 +1,6 @@
 <div class="logo-header" data-background-color="blue">
 
-    <h4 class="fw-bold" style="color: white;">KingNet</h4>
+    <h4 class="fw-bold mb-0" style="color: white;">KingNet</h4>
 
     <!-- Tombol Toggle Sidebar -->
     <button class="navbar-toggler sidenav-toggler ml-auto" type="button" aria-label="Toggle navigation">

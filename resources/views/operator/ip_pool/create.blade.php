@@ -48,7 +48,7 @@
                                 <select name="router_id" class="form-control" required>
                                     <option value="">-- Pilih Router --</option>
                                     @foreach ($routers as $router)
-                                        <option value="{{ $router->id }}">{{ $router->name }} ({{ $router->ip }})
+                                        <option value="{{ $router->id }}">{{ $router->name }} ({{ $router->host }})
                                         </option>
                                     @endforeach
                                 </select>

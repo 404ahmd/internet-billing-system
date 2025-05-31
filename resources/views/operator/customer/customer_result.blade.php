@@ -38,9 +38,9 @@
                                 <td>{{ $customer->due_date }}</td>
                                 <td>{{ $customer->notes }}</td>
                                 <td>
-                                    <a href="{{ route('customer.edit', $customer->id) }}"
+                                    <a href="{{ route('operator.customer.edit', $customer->id) }}"
                                         class="btn btn-sm btn-warning">Edit</a>
-                                    <form action="{{ route('customer.destroy', $customer->id) }}" method="POST"
+                                    <form action="{{ route('operator.customer.destroy', $customer->id) }}" method="POST"
                                         class="d-inline" onsubmit="return confirm('Yakin ingin hapus?')">
                                         @csrf
                                         @method('DELETE')

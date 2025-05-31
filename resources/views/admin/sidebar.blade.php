@@ -55,6 +55,13 @@
                     </a> 
                 </li>
 
+                <li class="nav-item">
+                    <a href="{{route('admin.ppp-secret.create')}}">
+                        <i class="fas fa-solid fa-wifi"></i>
+                        <p>PPPoE Secret</p>
+                    </a>
+                </li>
+
                 <hr>
 
                 <!-- ================== Paket ================== -->

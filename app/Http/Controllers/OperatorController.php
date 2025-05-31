@@ -119,13 +119,42 @@ class OperatorController extends Controller
     public function searchCustomerOperator(Request $request)
     {
         $request->validate([
-            'keyword' => 'string|max:255'
+            'keyword' => 'nullable|string|max:255',
+            'status' => 'nullable|in:active,inactive,terminated'
         ]);
 
         $keyword = $request->keyword;
-        $customers = DB::table('customers')->where('name', 'like', '%' . $keyword . '%')->paginate();
-        return view('operator.customer.customer_result', compact('customers'));
+        $status = $request->status;
+
+        $query = DB::table('customers');
+
+        if ($keyword) {
+            $query->where(function ($q) use ($keyword) {
+                $q->where('name', 'like', '%' . $keyword . '%')
+                    ->orWhere('username', 'like', '%' . $keyword . '%');
+            });
+        }
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        $customers = $query->paginate(10);
+
+        // Ambil kembali data lain yang dibutuhkan view
+        $packages = \App\Models\Package::all();
+        $invoices = \App\Models\Invoice::all();
+
+        return view('operator.customer.customer_management', [
+            'customers' => $customers,
+            'packages' => $packages,
+            'invoices' => $invoices,
+            'keyword' => $keyword,
+            'status' => $status,
+        ]);
     }
+
+
 
     //ACTIVATION CUSTOMER SECTION ===========================================================================
     public function indexActivationCustomerOperator()
@@ -488,9 +517,9 @@ class OperatorController extends Controller
     public function destroyRouter(Router $router)
     {
         try {
-            if ($router->IpPolls()->count() > 0) {
-                return redirect()->back()->with('error', 'Router masih digunakan oleh Ip Pool, silahkan hapus Ip pool terlebih dahulu');
-            }
+            // if ($router->IpPolls()->count() > 0) {
+            //     return redirect()->back()->with('error', 'Router masih digunakan oleh Ip Pool, silahkan hapus Ip pool terlebih dahulu');
+            // }
 
             $router->delete();
             return redirect()->route('operator.router.view')->with('success', 'Router berhasil dihapus');
@@ -740,65 +769,102 @@ class OperatorController extends Controller
     }
 
 
-        // PPP SECRETE SECTION =======================================================================
+    // PPP SECRET SECTION =======================================================================
 
-        public function createPppSecretes(){
-            $routers = Router::all();
-            $profiles = PppProfiles::all();
-            $secrets = PppSecret::all();
-            return view('operator.pppoe.ppp-secret', [
-                'routers' => $routers,
-                'profiles' => $profiles,
-                'secrets' => $secrets
-            ]);
-        }
+    public function createPppSecretes()
+    {
+        $routers = Router::all();
+        $profiles = PppProfiles::all();
+        $secrets = PppSecret::all();
+        return view('operator.pppoe.ppp-secret', [
+            'routers' => $routers,
+            'profiles' => $profiles,
+            'secrets' => $secrets
+        ]);
+    }
 
-        public function storePppSecrets(Request $request){
-            $validated = $request->validate([
-                'router_id' => 'required|exists:routers,id',
-                'name' => 'required|string', 
-                'password' => 'required|string', 
-                'service' => 'required|string', 
-                'profile' => 'required', 
-                'local_address' => 'nullable|string', 
-                'remote_address' => 'nullable|string', 
-                'comment' => 'nullable'
-            ]);
+    public function storePppSecrets(Request $request)
+    {
+        $validated = $request->validate([
+            'router_id' => 'required|exists:routers,id',
+            'name' => 'required|string',
+            'password' => 'required|string',
+            'service' => 'required|string',
+            'profile' => 'required',
+            'local_address' => 'nullable|string',
+            'remote_address' => 'nullable|string',
+            'comment' => 'nullable'
+        ]);
 
-            $router = Router::findOrFail($validated['router_id']);
-            $password = $this->decryptPassword($router->password);
+        $router = Router::findOrFail($validated['router_id']);
+        $password = $this->decryptPassword($router->password);
 
-            try {
-                $client = new Client([
+        try {
+            $client = new Client([
                 'host' => $router->host,
                 'user' => $router->username,
                 'pass' => $password,
                 'port' => $router->port ?? 8728,
             ]);
 
-                $query = new Query('/ppp/secret/add');
-                $query->equal('name', $validated['name'])
+            $query = new Query('/ppp/secret/add');
+            $query->equal('name', $validated['name'])
                 ->equal('password', $validated['password'])
                 ->equal('service', $validated['service'])
                 ->equal('profile', $validated['profile'])
                 ->equal('comment', $validated['comment']);
 
 
-                if (!empty($validated['local_address'])) {
-                    $query->equal('local-address', $validated['local_address']);
-                }
-
-                if (!empty($validated['remote_address'])) {
-                    $query->equal('remote-address', $validated['remote_address']);
-                }
-
-                $client->query($query)->read();
-
-                PppSecret::create($validated);
-
-                return redirect()->route('operator.ppp-secret.create')->with('success', 'secret berhasil ditambahkan');
-            } catch (\Exception $e) {
-                return redirect()->back()->withErrors(["error", "gagal menambah secret baru" . $e->getMessage()]);
+            if (!empty($validated['local_address'])) {
+                $query->equal('local-address', $validated['local_address']);
             }
+
+            if (!empty($validated['remote_address'])) {
+                $query->equal('remote-address', $validated['remote_address']);
+            }
+
+            $client->query($query)->read();
+
+            PppSecret::create($validated);
+
+            return redirect()->route('operator.ppp-secret.create')->with('success', 'secret berhasil ditambahkan');
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(["error", "gagal menambah secret baru" . $e->getMessage()]);
         }
+    }
+
+    public function removePppSecrets($id)
+    {
+        $secrets = PppSecret::findOrFail($id);
+
+        try {
+            $router = $secrets->router;
+            $password = $this->decryptPassword($router->password);
+            $client = new Client([
+                'host' => $router->host,
+                'user' => $router->username,
+                'pass' => $password,
+                'port' => $router->port ?? 8728
+            ]);
+
+            $query = new Query('/ppp/secret/print');
+            $query->where('name', $secrets->name);
+
+            $result = $client->query($query)->read();
+
+            if (!empty($result)) {
+                $secretId = $result[0]['.id']; // Dapatkan internal MikroTik ID
+                $deleteQuery = new Query('/ppp/secret/remove');
+                $deleteQuery->equal('.id', $secretId);
+
+
+                $client->query($deleteQuery)->read();
+            }
+
+            $secrets->delete();
+            return redirect()->route('operator.ppp-secret.create')->with('success', 'secret berhasil dihapus');
+        } catch (\Exception $e) {
+            return back()->withErrors(["error", "secret tidak bisa dihapus " . $e->getMessage()]);
+        }
+    }
 }

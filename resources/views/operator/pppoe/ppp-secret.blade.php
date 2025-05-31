@@ -114,8 +114,8 @@
                     </div>
 
                     <div class="card">
-                        <div class="card-header bg primary text-white">
-                            <h5>Daftar Secrets</h5>
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Daftar Secrets</h5>
                         </div>
                         <div class="card-body">
                             @if ($secrets->isEmpty())
@@ -149,7 +149,7 @@
                                                     <td>{{ $secret->comment }}</td>
 
                                                     <td>
-                                                        <form action="#" method="POST"
+                                                        <form action="{{route('operator.ppp-secret.remove', $secret->id)}}" method="POST"
                                                             onsubmit="return confirm('Yakin ingin menghapus router ini?');">
                                                             @csrf
                                                             @method('DELETE')

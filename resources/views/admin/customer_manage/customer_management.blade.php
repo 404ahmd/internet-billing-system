@@ -113,6 +113,27 @@
                 </button>
 
                 {{-- FORM SEARCH --}}
+
+                 <form method="GET" action="{{ route('admin.customer.search') }}"
+                        class="row g-2 align-items-center mt-3">
+                        <div class="col-auto">
+                            <label for="filter_status" class="col-form-label">Filter Status:</label>
+                        </div>
+                        <div class="col-auto">
+                            <select name="status" id="filter_status" class="form-select form-select-sm">
+                                <option value="">-- Semua --</option>
+                                <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Aktif</option>
+                                <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Tidak
+                                    Aktif</option>
+                                <option value="terminated" {{ request('status') == 'terminated' ? 'selected' : '' }}>
+                                    Dihentikan</option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-sm btn-secondary">Terapkan</button>
+                        </div>
+                    </form>
+
                 <form method="GET" action="{{ route('admin.customer.search') }}"
                     class="d-flex align-items-center gap-2 bg-light rounded px-2 py-1 ms-lg-3 mt-2 mt-lg-0 shadow-sm position-relative">
 
