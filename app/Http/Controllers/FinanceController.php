@@ -73,6 +73,20 @@ class FinanceController extends Controller
     }
 
 
+     public function searchUnpaid(Request $request)
+    {
+        $keyword = $request->input('customer_name');
+
+        $invoices = Invoice::with('customer')
+            ->where('status', 'unpaid')
+            ->whereHas('customer', function ($query) use ($keyword) {
+                $query->where('name', 'like', '%' . $keyword . '%');
+            })
+            ->paginate(10);
+
+        return view('finance.customer_arrears', compact('invoices', 'keyword'));
+    }
+
 
     public function transactionsHistory()
     {
@@ -112,7 +126,7 @@ class FinanceController extends Controller
     public function search(Request $request){
          $request->validate([
             'keyword' => 'nullable|string|max:255',
-            'status' => 'nullable|in:active,inactive,terminated'
+            'status' => 'nullable|in:active,inactive,terminated,free,other'
         ]);
 
         $keyword = $request->keyword;
@@ -176,7 +190,7 @@ class FinanceController extends Controller
             ->paginate(10)
             ->appends($request->query()); // agar filter tetap saat paginate
 
-        return view('admin.invoice.invoice_customer', compact('invoices', 'keyword', 'status'));
+        return view('finance.list_invoice', compact('invoices', 'keyword', 'status'));
     
     }
 

@@ -65,6 +65,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/finance/customer/search', [FinanceController::class, 'search'])->name('finance.customer.search');
     Route::get('/finance/invoice/search', [FinanceController::class, 'searchInvoice'])->name('finance.invoices.search');
     Route::patch('/finance/{invoice}/markAsPaid', [FinanceController::class, 'markAsPaid'])->name('finance.invoice.markAsPaid');
+    Route::get('/finance/invoices/unpaid/search', [FinanceController::class, 'searchUnpaid'])->name('finance.invoices.searchUnpaid');
+
 
     //ADMININSTRATOR======================
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
@@ -93,6 +95,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('admin/invoices/search', [AdminController::class, 'searchInvoiceAdmin'])->name('admin.invoices.search');
     Route::delete('admin/invoice/{invoice}', [AdminController::class, 'destroyInvoiceAdmin'])->name('admin.invoice.delete');
     Route::patch('/admin/{invoice}/markAsPaid', [AdminController::class, 'markAsPaid'])->name('admin.invoice.markAsPaid');
+    Route::get('/admin/invoices/unpaid/search', [AdminController::class, 'searchUnpaid'])->name('admin.invoices.searchUnpaid');
 
 
     Route::get('admin/transaction/search', [AdminController::class, 'searchTransactionsAdmin'])->name('admin.transaction.search');
@@ -122,6 +125,7 @@ Route::middleware(['auth'])->group(function () {
 
     // OPERATOR =====================
     Route::get('/operator/dashboard', [OperatorController::class, 'dashboard'])->name('operator.dashboard');
+    Route::get('/operator/mikrotik/stats', [OperatorController::class, 'getMikrotikStats']);
     Route::get('/operator/customer/view', [OperatorController::class, 'indexOperator'])->name('operator.customer.view');
     Route::post('/operator/customer/store', [OperatorController::class, 'storeCustomerOperator'])->name('operator.customer.store');
     Route::get('/operator/customer/search', [OperatorController::class, 'searchCustomerOperator'])->name('operator.customer.search');

@@ -24,6 +24,10 @@
                                         Aktif</option>
                                     <option value="terminated" {{ request('status') == 'terminated' ? 'selected' : '' }}>
                                         Dihentikan</option>
+                                        <option value="free" {{ request('status') == 'free' ? 'selected' : '' }}>
+                                        Gratis</option>
+                                        <option value="other" {{ request('status') == 'other' ? 'selected' : '' }}>
+                                        Lainnya</option>
                                 </select>
                             </div>
                             <div class="col-auto">

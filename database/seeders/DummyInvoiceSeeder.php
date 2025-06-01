@@ -19,9 +19,9 @@ class DummyInvoiceSeeder extends Seeder
         // Package amounts mapping
         $packageAmounts = [
             1 => 150000,
-            2 => 250000,
-            3 => 300000,
-            4 => 350000
+            2 => 200000,
+            3 => 250000,
+            4 => 300000
         ];
 
         // Payment methods

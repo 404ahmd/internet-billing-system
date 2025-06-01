@@ -26,7 +26,7 @@
                                 <td class="px-4 py-2 border">{{ $customers->firstItem() + $index }}</td>
                                 <td class="px-4 py-2 border">{{ $customer->name }}</td>
                                 <td class="px-4 py-2 border">{{ $customer->username }}</td>
-                                <td class="px-4 py-2 border">{{ $customer->package }}</td>
+                                <td class="px-4 py-2 border">{{ $customer->package}}</td>
                                 <td class="px-4 py-2 border">{{ $customer->group ?? '-' }}</td>
                                 <td class="px-4 py-2 border">{{ $customer->status }}</td>
                             </tr>

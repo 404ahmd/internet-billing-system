@@ -162,7 +162,7 @@ class AdminController extends Controller
     {
         $request->validate([
             'keyword' => 'nullable|string|max:255',
-            'status' => 'nullable|in:active,inactive,terminated'
+            'status' => 'nullable|in:active,inactive,terminated,free,other'
         ]);
 
         $keyword = $request->keyword;
@@ -410,6 +410,20 @@ class AdminController extends Controller
         return view('admin.invoice.invoice_customer', compact('invoices', 'keyword', 'status'));
     }
 
+    public function searchUnpaid(Request $request)
+    {
+        $keyword = $request->input('customer_name');
+
+        $invoices = Invoice::with('customer')
+            ->where('status', 'unpaid')
+            ->whereHas('customer', function ($query) use ($keyword) {
+                $query->where('name', 'like', '%' . $keyword . '%');
+            })
+            ->paginate(10);
+
+        return view('finance.customer_arrears', compact('invoices', 'keyword'));
+    }
+
 
     //get form invoice update
     public function editInvoiceAdmin(Invoice $invoice)
@@ -464,11 +478,19 @@ class AdminController extends Controller
         }
     }
 
-     public function markAsPaid(Invoice $invoice){
+    public function markAsPaid(Invoice $invoice)
+    {
         $invoice->update([
             'status' => 'paid',
-            'paid_at' =>now(),
+            'paid_at' => now(),
         ]);
+
+        $customer = $invoice->customer;
+        if ($customer->status !== 'active') {
+            $customer->update([
+                'status' => 'active'
+            ]);
+        }
 
         return back()->with('success', 'Sudah lunas');
     }
@@ -501,7 +523,7 @@ class AdminController extends Controller
     public function adminCustomerArrears()
     {
         $invoices = Invoice::with('customer')
-        ->where('status', 'unpaid')->paginate(10);
+            ->where('status', 'unpaid')->paginate(10);
 
         return view('admin.customer_manage.customer_arrears', [
             'invoices' => $invoices,
