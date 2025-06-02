@@ -63,13 +63,54 @@ class AdminController extends Controller
             //$transactionsAmount->push(round($amount, 2));
         }
 
+        // =======================================
+        $router = Router::first();
         return view('admin.dashboard', [
             'monthlyRevenue' => $monthlyRevenue,
             'paymentStatus' => $paymentStatus,
             'months' => $months,
+            'router' => $router,
             'transactionsCount' => $transactionsCount,
             //'transactionsAmount' => $transactionsAmount,
         ]);
+    }
+
+     public function getMikrotikStats(){
+
+        try {
+            $router = Router::first(); // atau sesuai router ID
+            $password = $this->decryptPassword($router->password);
+
+            $client = new Client([
+                'host' => $router->host,
+                'user' => $router->username,
+                'pass' => $password,
+                'port' => $router->port ?? 8728,
+                'timeout' => 3,
+                'attempts' => 1
+            ]);
+
+            $identity = $client->query('/system/identity/print')->read();
+            $resource = $client->query('/system/resource/print')->read();
+            $interfaces = $client->query('/interface/print')->read();
+
+            return response()->json([
+                'online' => true,
+                'data' => [
+                    'identity' => $identity[0]['name'] ?? $router->name,
+                    'cpu_load' => $resource[0]['cpu-load'] ?? 'N/A',
+                    'uptime' => $this->formatUptime($resource[0]['uptime'] ?? 0),
+                    'memory_usage' => round(100 - (($resource[0]['free-memory'] / $resource[0]['total-memory']) * 100), 2),
+                    'interface_count' => count($interfaces),
+                    'version' => $resource[0]['version'] ?? 'N/A'
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'online' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     // CUSTOMER SECTION ==================

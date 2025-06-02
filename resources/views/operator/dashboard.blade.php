@@ -5,7 +5,7 @@
         <div class="content">
             <div class="card">
                 <div class="card-body">
-                    <h2>Dashboard Router: <span id="router-name">{{ $router->name }}</span></h2>
+                    {{-- <h2>Dashboard Router: <span id="router-name">{{ $router->name }}</span></h2> --}}
 
                     <div class="row">
                         <div class="col-md-6">

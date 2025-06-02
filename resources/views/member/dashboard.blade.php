@@ -8,6 +8,14 @@
 <body class="bg-light">
 <div class="container mt-4">
 
+     @forelse($invoices as $index => $invoice)
+                 <h5 class="mb-4">{{ $invoice->customer->name }}</h5>
+                     <h5 class="mb-4"> Jenis Paket : {{ $invoice->package->name }}</h5>
+                     <h5 class="mb-4"> Harga : Rp.{{ $invoice->package->price }}</h5>
+            @empty
+
+            @endforelse
+
     <div class="card mb-4 shadow-sm">
         <div class="card-header bg-primary text-white">
             <h5 class="mb-0">Tagihan Anda</h5>

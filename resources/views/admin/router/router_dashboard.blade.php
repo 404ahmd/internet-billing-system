@@ -16,7 +16,7 @@
                     @endif
 
                     @if ($errors->any())
-                        
+
                         <div class="alert alert-danger alert-dismissible fade show">
                             <ul class="mb-0">
                                 @foreach ($errors->all() as $error)
@@ -33,7 +33,7 @@
                             <h5 class="mb-0">Tambah Router Baru</h5>
                         </div>
                         <div class="card-body">
-                            <form method="POST" action="{{ route('operator.router.connect') }}">
+                            <form method="POST" action="{{ route('admin.router.connect') }}">
                                 @csrf
                                 <div class="row">
                                     <div class="col-md-6">
@@ -110,7 +110,7 @@
                                                     <td class="last_seen">
                                                         {{ $router->last_seen_at ? \Carbon\Carbon::parse($router->last_seen_at)->diffForHumans() : 'Never' }}
                                                     </td>
-                                                    <td>    
+                                                    <td>
                                                         <form action="{{route('admin.destroy.router', $router->id)}}" method="POST"
                                                             onsubmit="return confirm('Yakin ingin menghapus router ini?');">
                                                             @csrf
@@ -140,7 +140,7 @@
             // Fungsi untuk memformat memory usage
             // function formatMemory(percent) {
             //     return `<div class="progress" style="height: 20px;">
-        //                 <div class="progress-bar" role="progressbar" style="width: ${percent}%" 
+        //                 <div class="progress-bar" role="progressbar" style="width: ${percent}%"
         //                      aria-valuenow="${percent}" aria-valuemin="0" aria-valuemax="100">
         //                     ${percent}%
         //                 </div>
@@ -169,7 +169,7 @@
             function refreshRouterStatus() {
                 @foreach ($routers as $router)
                     $.ajax({
-                        url: '{{ route('operator.router.status', $router->id) }}',
+                        url: '{{ route('admin.router.status', $router->id) }}',
                         type: 'GET',
                         dataType: 'json',
                         success: function(response) {
