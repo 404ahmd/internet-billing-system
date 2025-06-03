@@ -227,3 +227,4 @@ INSERT INTO `invoices` (`customer_id`, `package_id`, `invoice_number`, `issue_da
 ((SELECT id FROM customers WHERE username = '118-gs-ajai_setiawan'), (SELECT id FROM packages WHERE price = 150000.00), 'INV-2025-05-04-001', '2025-05-04', '2025-05-11', 150000.00, 0.00, 150000.00, 'paid', '2025-05-04 00:00:00', 'KN25-005-GS'),
 ((SELECT id FROM customers WHERE username = '119-sd-iis_sartika'), (SELECT id FROM packages WHERE price = 150000.00), 'INV-2025-05-04-002', '2025-05-04', '2025-05-11', 150000.00, 0.00, 150000.00, 'paid', '2025-05-04 00:00:00', 'KN25-008-GS'),
 ((SELECT id FROM customers WHERE username = '120-sd-fera_lae'), (SELECT id FROM packages WHERE price = 150000.00), 'INV-2025-05-08-001', '2025-05-08', '2025-05-15', 150000.00, 0.00, 150000.00, 'paid', '2025-05-08 00:00:00', 'KN25-0014-GS');
+

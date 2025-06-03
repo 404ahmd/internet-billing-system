@@ -15,7 +15,7 @@
                             </div>
                             <div id="search_suggestions" class="list-group position-absolute w-100 z-3"
                                 style="max-height: 200px; overflow-y: auto;"></div>
-                            <button type="submit" class="btn btn-primary mt-2">Cari</button>
+                            <button type="submit" class="btn btn-primary btn-sm mt-2">Cari</button>
                         </form>
 
 
@@ -34,11 +34,13 @@
                                     </option>
                                 </select>
                             </div>
-                            <button type="submit" class="btn btn-primary">Terapkan</button>
+                            <button type="submit" class="btn btn-sm btn-primary">Terapkan</button>
                         </form>
 
                         <h2 class="text-2xl font-bold mb-4">Laporan Pembuatan Invoice</h2>
-
+                         <a href="{{ route('export.invoices') }}" class="btn btn-sm btn-secondary mt-2 mb-2">
+                        <i class="fas fa-file-excel"></i> Export to Excel
+                    </a>
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover">
                                 <thead class="thead-light">

@@ -6,7 +6,7 @@
             <div class="card">
                 <div class="card-body">
 
-                   
+
                     @if (session('success'))
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
                             {{ session('success') }}
@@ -49,9 +49,22 @@
                                             placeholder="ex: pppoe_default" required>
                                     </div>
 
+                                     <div class="form-group">
+                                        <label>Ip Lokal</label>
+                                        <input type="text" name="local_address" class="form-control"
+                                            placeholder="ex: 192.168.10.3">
+                                    </div>
+
                                     <div class="form-group">
+                                        <label>Ip Remote</label>
+                                        <input type="text" name="remote_address" class="form-control"
+                                            placeholder="ex: 192.168.10.4">
+                                    </div>
+
+                                    {{-- <div class="form-group">
                                         <label>IP Pool Lokal</label>
-                                        <select name="local_address" class="form-control" required>
+                                        <select name="local_address" class="form-control">
+                                            <option value="">-- Opsional --</option>
                                             @foreach (\App\Models\IpPool::all() as $pool)
                                                 <option value="{{ $pool->id }}">{{ $pool->name }}
                                                     ({{ $pool->range }})
@@ -62,14 +75,15 @@
 
                                     <div class="form-group">
                                         <label>IP Pool Remote</label>
-                                        <select name="remote_address" class="form-control" required>
+                                        <select name="remote_address" class="form-control">
+                                             <option value="">-- Opsional --</option>
                                             @foreach (\App\Models\IpPool::all() as $pool)
                                                 <option value="{{ $pool->id }}">{{ $pool->name }}
                                                     ({{ $pool->range }})
                                                 </option>
                                             @endforeach
                                         </select>
-                                    </div>
+                                    </div> --}}
 
                                     <div class="form-group">
                                         <label>Rate Limit (optional)</label>
@@ -107,10 +121,10 @@
                                                     <td>{{ $index + 1}}</td>
                                                     <td>{{ $profile->name }}</td>
                                                     <td>{{ $profile->router->name ?? "-"}}</td>
-                                                    <td>{{$profile->localPool->range ?? "-"}}</td>
-                                                    <td>{{$profile->remotePool->range ?? "-"}}</td>
+                                                    <td>{{$profile->local_address}}</td>
+                                                    <td>{{$profile->remote_address}}</td>
                                                     <td>{{$profile->rate_limit}}</td>
-                                                    
+
                                                     <td>
                                                         <form action="{{route('admin.ppp-profile.remove', $profile->id)}}" method="POST"
                                                             onsubmit="return confirm('Yakin ingin menghapus router ini?');">

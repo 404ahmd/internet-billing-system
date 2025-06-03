@@ -1,11 +1,13 @@
 <?php
 
+use App\Exports\CustomersExport;
 use App\Http\Controllers\ActivationController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExportController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MemberController;
@@ -15,8 +17,11 @@ use App\Http\Controllers\RouterOsController;
 use App\Http\Controllers\TransactionController;
 use Illuminate\Routing\RouteRegistrar;
 use Illuminate\Support\Facades\Route;
+use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Calculation\Statistical\Distributions\Exponential;
 use PHPUnit\Framework\Constraint\Operator;
 use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
+use SebastianBergmann\Exporter\Exporter;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,13 +42,16 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::get('/member/login', [AuthController::class, 'loginMemberForm'])->name('member.login');
 Route::post('/member/auth', [AuthController::class, 'loginMember'])->name('member.auth');
 Route::get('/member/dashboard', [MemberController::class, 'dashboard'])->name('member.dashboard');
-Route::get('/test/router', [RouterOsController::class, 'test']);
 
 Route::middleware(['auth'])->group(function () {
 
     Route::get('/dump', function () {
         return view('operator.dum_content');
     })->name('dump');
+
+
+    // FOR TESTING A ROUTER
+    Route::get('/test/router', [RouterOsController::class, 'test']);
 
 
     Route::get('/user/manager', [DashboardController::class, 'manager'])->name('user.manager');
@@ -168,5 +176,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/operator/ppp-secret/create', [OperatorController::class, 'createPppSecretes'])->name('operator.ppp-secret.create');
     Route::post('/operator/ppp-secret/store', [OperatorController::class, 'storePppSecrets'])->name('operator.ppp-secret.store');
     Route::delete('/operator/ppp-secret/{id}/remove', [OperatorController::class, 'removePppSecrets'])->name('operator.ppp-secret.remove');
+
+    // ========================================== EXPORT DATA =========================================
+    Route::get('export/customers', [ExportController::class, 'exportCustomerData'])->name('export.customers');
+    Route::get('/export/invoices', [ExportController::class, 'exportInvoiceData'])->name('export.invoices');
 });
 Route::get('/dashboard', [DashboardController::class, 'index']);

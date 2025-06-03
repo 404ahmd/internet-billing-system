@@ -32,7 +32,8 @@ class OperatorController extends Controller
         return view('operator.dashboard', compact('router'));
     }
 
-    public function getMikrotikStats(){
+    public function getMikrotikStats()
+    {
 
         try {
             $router = Router::first(); // atau sesuai router ID
@@ -814,7 +815,9 @@ class OperatorController extends Controller
     {
         $routers = Router::all();
         $profiles = PppProfiles::all();
-        $secrets = PppSecret::all();
+        $secrets = PppSecret::with('router')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
         return view('operator.pppoe.ppp-secret', [
             'routers' => $routers,
             'profiles' => $profiles,

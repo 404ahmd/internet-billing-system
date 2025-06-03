@@ -11,7 +11,7 @@
         <div class="col-md-5">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h4 class="mb-4 text-center">Login Admin</h4>
+                    <h4 class="mb-4 text-center">Billing Portal</h4>
 
                     @if (session('success'))
                         <div class="alert alert-success">{{ session('success') }}</div>
@@ -34,8 +34,7 @@
                         <button class="btn btn-primary w-100">Login</button>
                     </form>
                 </div>
-                <a href="/forgot-password" class="text-center mb-2">Forgot Passwrod ??</a>
-            </div>
+                   </div>
         </div>
     </div>
 </div>

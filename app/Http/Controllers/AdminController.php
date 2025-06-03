@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use RouterOS\Client;
 use RouterOS\Query;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpKernel\Profiler\Profile;
 
 class AdminController extends Controller
 {
@@ -75,7 +76,8 @@ class AdminController extends Controller
         ]);
     }
 
-     public function getMikrotikStats(){
+    public function getMikrotikStats()
+    {
 
         try {
             $router = Router::first(); // atau sesuai router ID
@@ -728,10 +730,17 @@ class AdminController extends Controller
     public function createIpPool()
     {
         $routers = Router::all();
-        $ip_pools = IpPool::latest()->paginate(10);
+        $ip_pools = IpPool::with('router')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
+
+
+        // dd($ip_pools->toArray());
+
         return view('admin.ip_pool.create', [
-            'routers' => $routers,
-            'ip_pools' => $ip_pools
+            'ip_pools' => $ip_pools,
+            'routers' => $routers
         ]);
     }
 
@@ -848,7 +857,10 @@ class AdminController extends Controller
     public function createPppProfile()
     {
         $routers = Router::all();
-        $profiles = PppProfiles::with('router')->get();
+        $profiles = PppProfiles::with('router')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+        // dd($profiles->toArray());
         return view('admin.pppoe.ppp-profile', [
             'routers' => $routers,
             'profiles' => $profiles,
@@ -860,8 +872,8 @@ class AdminController extends Controller
         $validated = $request->validate([
             'router_id' => 'required|exists:routers,id',
             'name' => 'required|string',
-            'local_address' => 'required|exists:ip_pools,id',
-            'remote_address' => 'required|exists:ip_pools,id',
+            'local_address' => 'nullable|string',
+            'remote_address' => 'nullable|string',
             'rate_limit' => 'nullable|string',
         ]);
 
@@ -876,13 +888,18 @@ class AdminController extends Controller
                 'port' => $router->port ?? 8728,
             ]);
 
-            $localPoolName = IpPool::findOrFail($validated['local_address'])->name;
-            $remotePoolName = IpPool::findOrFail($validated['remote_address'])->name;
+            // $localPoolName = IpPool::findOrFail($validated['local_address'])->name;
+            // $remotePoolName = IpPool::findOrFail($validated['remote_address'])->name;
             $query = new Query('/ppp/profile/add');
-            $query->equal('name', $validated['name'])
-                ->equal('local-address', $localPoolName)
-                ->equal('remote-address', $remotePoolName);
+            $query->equal('name', $validated['name']);
 
+            if (!empty($validated['local_address'])) {
+                $query->equal('local-address', $validated['local_address']);
+            }
+
+            if (!empty($validated['remote_address'])) {
+                $query->equal('remote-address', $validated['remote_address']);
+            }
             if ($validated['rate_limit']) {
                 $query->equal('rate-limit', $validated['rate_limit']);
             }
@@ -938,7 +955,9 @@ class AdminController extends Controller
     {
         $routers = Router::all();
         $profiles = PppProfiles::all();
-        $secrets = PppSecret::all();
+        $secrets = PppSecret::with('router')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
         return view('admin.pppoe.ppp-secret', [
             'routers' => $routers,
             'profiles' => $profiles,
