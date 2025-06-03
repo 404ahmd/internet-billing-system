@@ -114,6 +114,13 @@
                     </div>
                 </div>
 
+
+                <form action="{{ route('admin.ppp-secret.search') }}" method="GET" class="form-inline mb-3">
+                    <input type="text" name="name" class="form-control mr-2" placeholder="Cari nama PPP Secret"
+                        value="{{ request('name') }}">
+                    <button type="submit" class="btn btn-primary">Cari</button>
+                </form>
+
                 <div class="card">
                     <div class="card-header bg-primary text-white">
                         <h5 class="mb-0">Daftar Secrets</h5>

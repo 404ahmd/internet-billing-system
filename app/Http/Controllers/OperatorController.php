@@ -811,17 +811,18 @@ class OperatorController extends Controller
 
     // PPP SECRET SECTION =======================================================================
 
-    public function createPppSecretes()
+    public function createPppSecretes(Request $request)
     {
         $routers = Router::all();
         $profiles = PppProfiles::all();
         $secrets = PppSecret::with('router')
             ->orderBy('created_at', 'desc')
             ->paginate(10);
+
         return view('operator.pppoe.ppp-secret', [
             'routers' => $routers,
             'profiles' => $profiles,
-            'secrets' => $secrets
+            'secrets' => $secrets,
         ]);
     }
 
@@ -873,6 +874,20 @@ class OperatorController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(["error", "gagal menambah secret baru" . $e->getMessage()]);
         }
+    }
+
+    public function searchPppSecret(Request $request)
+    {
+        $keyword = $request->input('name');
+
+        $secrets = PppSecret::where('name', 'like', '%' . $keyword . '%')
+            ->latest()
+            ->paginate(10);
+
+        $routers = Router::all();
+        $profiles = PppProfiles::all();
+
+        return view('operator.pppoe.ppp-secret', compact('secrets', 'keyword', 'routers', 'profiles'));
     }
 
     public function removePppSecrets($id)

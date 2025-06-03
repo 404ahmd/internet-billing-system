@@ -1049,4 +1049,18 @@ class AdminController extends Controller
             return back()->withErrors(["error", "secret tidak bisa dihapus " . $e->getMessage()]);
         }
     }
+
+     public function searchPppSecret(Request $request)
+    {
+        $keyword = $request->input('name');
+
+        $secrets = PppSecret::where('name', 'like', '%' . $keyword . '%')
+            ->latest()
+            ->paginate(10);
+
+        $routers = Router::all();
+        $profiles = PppProfiles::all();
+
+        return view('admin.pppoe.ppp-secret', compact('secrets', 'keyword', 'routers', 'profiles'));
+    }
 }

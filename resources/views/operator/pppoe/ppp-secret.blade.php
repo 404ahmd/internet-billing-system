@@ -119,6 +119,14 @@
                         <h5 class="mb-0">Daftar Secrets</h5>
                     </div>
                     <div class="card-body">
+
+                        <form action="{{ route('operator.ppp-secret.search') }}" method="GET" class="form-inline mb-3">
+                            <input type="text" name="name" class="form-control mr-2" placeholder="Cari nama PPP Secret"
+                                value="{{ request('name') }}">
+                            <button type="submit" class="btn btn-primary">Cari</button>
+                        </form>
+
+
                         @if ($secrets->isEmpty())
                         <div class="alert alert-info">Belum ada secret yang dibuat</div>
                         @else

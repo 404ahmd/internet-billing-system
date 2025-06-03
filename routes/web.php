@@ -126,6 +126,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/ppp-secret/create', [AdminController::class, 'createPppSecretes'])->name('admin.ppp-secret.create');
     Route::post('/admin/ppp-secret/store', [AdminController::class, 'storePppSecrets'])->name('admin.ppp-secret.store');
     Route::delete('/admin/ppp-secret/{id}/remove', [AdminController::class, 'removePppSecrets'])->name('admin.ppp-secret.remove');
+        Route::get('/admin/ppp-secret/search', [AdminController::class, 'searchPppSecret'])->name('admin.ppp-secret.search');
+
 
     Route::get('/admin/ppp-profile/create', [AdminController::class, 'createPppProfile'])->name('admin.ppp-profile.create');
     Route::post('/admin/ppp-profile/post', [AdminController::class, 'storePppProfile'])->name('admin.ppp-profile.store');
@@ -176,7 +178,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/operator/ppp-secret/create', [OperatorController::class, 'createPppSecretes'])->name('operator.ppp-secret.create');
     Route::post('/operator/ppp-secret/store', [OperatorController::class, 'storePppSecrets'])->name('operator.ppp-secret.store');
     Route::delete('/operator/ppp-secret/{id}/remove', [OperatorController::class, 'removePppSecrets'])->name('operator.ppp-secret.remove');
-
+    Route::get('/operator/ppp-secret/search', [OperatorController::class, 'searchPppSecret'])->name('operator.ppp-secret.search');
     // ========================================== EXPORT DATA =========================================
     Route::get('export/customers', [ExportController::class, 'exportCustomerData'])->name('export.customers');
     Route::get('/export/invoices', [ExportController::class, 'exportInvoiceData'])->name('export.invoices');
